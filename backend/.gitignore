@@ -1,0 +1,13 @@
+# logs
+/logs
+*.log
+*.log.*
+npm-debug.log*
+
+# node modules
+/node_modules
+/.pnp
+
+# environment files
+.env
+.env.local
