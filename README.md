@@ -212,7 +212,7 @@ npm start
 
 ---
 
-## ✅ MVP Features Checklist
+## MVP Features Checklist
 
 - EJS template engine setup
 - Bootstrap 5 integration
