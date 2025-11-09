@@ -1,0 +1,25 @@
+# logs
+/logs
+*.log
+*.log.*
+npm-debug.log*
+
+# node modules
+node_modules\
+
+# environment files
+.env
+.env.local
+
+# Logs
+logs
+*.log
+
+# Optional eslint cache
+.eslintcache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
