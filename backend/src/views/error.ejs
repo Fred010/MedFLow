@@ -1,0 +1,64 @@
+<% 
+// Define user as undefined if it was never passed to the template 
+// This prevents a ReferenceError if the server didn't pass it, 
+// allowing the check inside navbar.ejs to work gracefully.
+if (typeof user === 'undefined') {
+    var user = undefined; 
+} 
+%>
+
+<%- include('partials/header', { user: user }) %>
+<%- include('partials/navbar', { user: user }) %>
+
+<div class="content-wrapper">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 text-center">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body p-5">
+                        <!-- Ensure you have a reference to bootstrap icons library (bi bi-*) in your header partial -->
+                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 5rem;"></i>
+                        
+                        <h1 class="display-4 fw-bold mt-4">
+                            <%= error.status || 500 %>
+                        </h1>
+                        
+                        <h4 class="mb-4">
+                            <%= message || 'Something went wrong' %>
+                        </h4>
+                        
+                        <p class="text-muted mb-4">
+                            <% if (error.status === 404) { %>
+                                The page you're looking for doesn't exist.
+                            <% } else if (error.status === 403) { %>
+                                You don't have permission to access this resource.
+                            <% } else if (error.status === 401) { %>
+                                Please login to access this page.
+                            <% } else { %>
+                                We're sorry, but something went wrong. Please try again later.
+                            <% } %>
+                        </p>
+
+                        <% if (process.env.NODE_ENV === 'development' && error.stack) { %>
+                            <div class="alert alert-warning text-start mt-4">
+                                <strong>Error Details (Development Mode):</strong>
+                                <pre class="mb-0 mt-2 small"><%= error.stack %></pre>
+                            </div>
+                        <% } %>
+
+                        <div class="mt-4">
+                            <a href="/" class="btn btn-primary me-2">
+                                <i class="bi bi-house"></i> Go Home
+                            </a>
+                            <button onclick="history.back()" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Go Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

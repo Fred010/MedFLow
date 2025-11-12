@@ -1,7 +1,7 @@
 // src/middleware/roleMiddleware.js
 
 // Check if user has required role
-const requireRole = (...allowedRoles) => {
+export const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -22,7 +22,7 @@ const requireRole = (...allowedRoles) => {
 };
 
 // Check if user is patient
-const isPatient = (req, res, next) => {
+export const isPatient = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
@@ -41,7 +41,7 @@ const isPatient = (req, res, next) => {
 };
 
 // Check if user is doctor
-const isDoctor = (req, res, next) => {
+export const isDoctor = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
@@ -60,7 +60,7 @@ const isDoctor = (req, res, next) => {
 };
 
 // Check if user is admin
-const isAdmin = (req, res, next) => {
+export const isAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
@@ -76,11 +76,4 @@ const isAdmin = (req, res, next) => {
   }
 
   next();
-};
-
-module.exports = {
-  requireRole,
-  isPatient,
-  isDoctor,
-  isAdmin
 };

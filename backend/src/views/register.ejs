@@ -1,0 +1,232 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="content-wrapper">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow-lg">
+                    <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <i class="bi bi-person-plus text-primary" style="font-size: 3rem;"></i>
+                            <h2 class="fw-bold mt-3">Create Account</h2>
+                            <p class="text-muted">Join MedFlow today</p>
+                        </div>
+
+                        <!-- Alert container -->
+                        <div id="alertContainer"></div>
+
+                        <form id="registerForm">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Full Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-person"></i>
+                                    </span>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="name" 
+                                           name="name"
+                                           placeholder="John Doe"
+                                           required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-envelope"></i>
+                                    </span>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="email" 
+                                           name="email"
+                                           placeholder="your@email.com"
+                                           required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-lock"></i>
+                                    </span>
+                                    <input type="password" 
+                                           class="form-control" 
+                                           id="password" 
+                                           name="password"
+                                           placeholder="Minimum 6 characters"
+                                           minlength="6"
+                                           required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-lock-fill"></i>
+                                    </span>
+                                    <input type="password" 
+                                           class="form-control" 
+                                           id="confirmPassword" 
+                                           name="confirmPassword"
+                                           placeholder="Re-enter password"
+                                           required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="role" class="form-label">Register As</label>
+                                <select class="form-select" id="role" name="role" required>
+                                    <option value="">Choose your role</option>
+                                    <option value="patient" selected>Patient</option>
+                                    <option value="doctor">Doctor</option>
+                                </select>
+                            </div>
+
+                            <!-- Specialty field (only for doctors) -->
+                            <div class="mb-3" id="specialtyField" style="display: none;">
+                                <label for="specialty" class="form-label">Specialty</label>
+                                <select class="form-select" id="specialty" name="specialty">
+                                    <option value="">Select specialty</option>
+                                    <option value="General Practice">General Practice</option>
+                                    <option value="Cardiology">Cardiology</option>
+                                    <option value="Dermatology">Dermatology</option>
+                                    <option value="Pediatrics">Pediatrics</option>
+                                    <option value="Neurology">Neurology</option>
+                                    <option value="Orthopedics">Orthopedics</option>
+                                    <option value="Psychiatry">Psychiatry</option>
+                                    <option value="Obstetrics">Obstetrics & Gynecology</option>
+                                    <option value="Ophthalmology">Ophthalmology</option>
+                                    <option value="ENT">ENT (Ear, Nose & Throat)</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+                                <label class="form-check-label" for="agreeTerms">
+                                    I agree to the <a href="#" class="text-primary">Terms & Conditions</a>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-2" id="registerBtn">
+                                <i class="bi bi-person-plus"></i> Create Account
+                            </button>
+                        </form>
+
+                        <hr class="my-4">
+
+                        <p class="text-center text-muted mb-0">
+                            Already have an account? 
+                            <a href="/login" class="text-primary text-decoration-none fw-bold">
+                                Login here
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const registerForm = document.getElementById('registerForm');
+    const registerBtn = document.getElementById('registerBtn');
+    const alertContainer = document.getElementById('alertContainer');
+    const roleSelect = document.getElementById('role');
+    const specialtyField = document.getElementById('specialtyField');
+    const specialtySelect = document.getElementById('specialty');
+
+    // Show/hide specialty field based on role
+    roleSelect.addEventListener('change', function() {
+        if (this.value === 'doctor') {
+            specialtyField.style.display = 'block';
+            specialtySelect.required = true;
+        } else {
+            specialtyField.style.display = 'none';
+            specialtySelect.required = false;
+        }
+    });
+
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const role = document.getElementById('role').value;
+        const specialty = document.getElementById('specialty').value;
+
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            showAlert('Passwords do not match!', 'danger');
+            return;
+        }
+
+        // Validate specialty for doctors
+        if (role === 'doctor' && !specialty) {
+            showAlert('Please select a specialty', 'danger');
+            return;
+        }
+
+        // Disable button and show loading
+        registerBtn.disabled = true;
+        registerBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating account...';
+
+        try {
+            const requestBody = { name, email, password, role };
+            if (role === 'doctor') {
+                requestBody.specialty = specialty;
+            }
+
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert('Registration successful! Redirecting...', 'success');
+                
+                // Redirect based on role
+                setTimeout(() => {
+                    if (data.user.role === 'patient') {
+                        window.location.href = '/patient/dashboard';
+                    } else if (data.user.role === 'doctor') {
+                        window.location.href = '/doctor/dashboard';
+                    } else {
+                        window.location.href = '/';
+                    }
+                }, 1500);
+            } else {
+                showAlert(data.message || 'Registration failed. Please try again.', 'danger');
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = '<i class="bi bi-person-plus"></i> Create Account';
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            showAlert('An error occurred. Please try again.', 'danger');
+            registerBtn.disabled = false;
+            registerBtn.innerHTML = '<i class="bi bi-person-plus"></i> Create Account';
+        }
+    });
+
+    function showAlert(message, type) {
+        alertContainer.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+</script>
+
+<%- include('partials/footer') %>
