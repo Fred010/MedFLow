@@ -1,0 +1,191 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<section class="page-header">
+    <div class="container">
+        <h1 class="display-5 fw-bold">
+            <i class="bi bi-calendar-plus"></i> Book Appointment
+        </h1>
+        <p class="lead">Schedule your appointment with Dr. <%= doctor.name %></p>
+    </div>
+</section>
+
+<div class="content-wrapper">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Doctor Info Card -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center"
+                                     style="width: 80px; height: 80px;">
+                                    <i class="bi bi-person-fill text-primary" style="font-size: 2.5rem;"></i>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <h4 class="mb-2 fw-bold">Dr. <%= doctor.name %></h4>
+                                <p class="mb-2">
+                                    <span class="badge bg-info"><%= doctor.specialty %></span>
+                                </p>
+                                <p class="text-muted mb-0">
+                                    <i class="bi bi-envelope"></i> <%= doctor.email %>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Booking Form Card -->
+                <div class="card shadow-lg">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-calendar-check"></i> Appointment Details
+                        </h5>
+
+                        <!-- Alert container -->
+                        <div id="alertContainer"></div>
+
+                        <form id="bookingForm">
+                            <div class="mb-4">
+                                <label for="appointmentDate" class="form-label">
+                                    <strong>Appointment Date & Time</strong>
+                                </label>
+                                <input type="datetime-local" 
+                                       class="form-control form-control-lg" 
+                                       id="appointmentDate" 
+                                       name="appointmentDate"
+                                       required>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle"></i> Please select a date and time in the future
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="reason" class="form-label">
+                                    <strong>Reason for Visit</strong>
+                                </label>
+                                <textarea class="form-control" 
+                                          id="reason" 
+                                          name="reason" 
+                                          rows="5"
+                                          placeholder="Please describe your symptoms or reason for the appointment..."
+                                          minlength="10"
+                                          maxlength="500"
+                                          required></textarea>
+                                <div class="form-text">
+                                    <span id="charCount">0</span>/500 characters
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="bi bi-info-circle"></i> Important Information
+                                </h6>
+                                <ul class="mb-0 small">
+                                    <li>Your appointment request will be sent to the doctor for approval</li>
+                                    <li>You will receive an email notification once the doctor reviews your request</li>
+                                    <li>Please arrive 10 minutes before your scheduled appointment</li>
+                                    <li>Bring your ID and any relevant medical records</li>
+                                </ul>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                    <i class="bi bi-send"></i> Submit Request
+                                </button>
+                                <a href="/doctors" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left"></i> Back to Doctors
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const bookingForm = document.getElementById('bookingForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const alertContainer = document.getElementById('alertContainer');
+    const reasonTextarea = document.getElementById('reason');
+    const charCount = document.getElementById('charCount');
+    const appointmentDateInput = document.getElementById('appointmentDate');
+
+    // Set minimum date to current date and time
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    appointmentDateInput.min = now.toISOString().slice(0, 16);
+
+    // Character counter
+    reasonTextarea.addEventListener('input', function() {
+        charCount.textContent = this.value.length;
+    });
+
+    bookingForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const appointmentDate = document.getElementById('appointmentDate').value;
+        const reason = document.getElementById('reason').value;
+
+        // Validate date is in the future
+        if (new Date(appointmentDate) <= new Date()) {
+            showAlert('Please select a future date and time', 'danger');
+            return;
+        }
+
+        // Disable button and show loading
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+
+        try {
+            const response = await fetch('/api/appointments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    doctor_id: <%= doctor.id %>,
+                    appointment_date: appointmentDate,
+                    reason: reason
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert('Appointment request submitted successfully! Redirecting...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = '/patient/dashboard';
+                }, 2000);
+            } else {
+                showAlert(data.message || 'Failed to book appointment. Please try again.', 'danger');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-send"></i> Submit Request';
+            }
+        } catch (error) {
+            console.error('Booking error:', error);
+            showAlert('An error occurred. Please try again.', 'danger');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-send"></i> Submit Request';
+        }
+    });
+
+    function showAlert(message, type) {
+        alertContainer.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        // Scroll to alert
+        alertContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+</script>
+
+<%- include('../partials/footer') %>

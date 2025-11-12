@@ -1,24 +1,35 @@
 // src/routes/viewRoutes.js
-const express = require('express');
-const router = express.Router();
-const ViewController = require('../controllers/viewController');
-const { authMiddleware, optionalAuth } = require('../middleware/authMiddleware');
-const { isPatient, isDoctor } = require('../middleware/roleMiddleware');
+import { Router } from 'express';
+import { 
+  home, 
+  loginPage, 
+  registerPage, 
+  patientDashboard,
+  doctorsPage,
+  bookAppointmentPage,
+  doctorDashboard,
+  appointmentDetails
+} from '../controllers/viewController.js';
+
+import { authMiddleware, optionalAuth } from '../middlewares/authMiddleware.js';
+import { isPatient, isDoctor } from '../middlewares/roleMiddleware.js';
+
+const router = Router();
 
 // Public routes
-router.get('/', optionalAuth, ViewController.home);
-router.get('/login', optionalAuth, ViewController.loginPage);
-router.get('/register', optionalAuth, ViewController.registerPage);
+router.get('/', optionalAuth, home);
+router.get('/login', optionalAuth, loginPage);
+router.get('/register', optionalAuth, registerPage);
 
 // Patient routes
-router.get('/patient/dashboard', authMiddleware, isPatient, ViewController.patientDashboard);
-router.get('/doctors', authMiddleware, isPatient, ViewController.doctorsPage);
-router.get('/book-appointment/:doctorId', authMiddleware, isPatient, ViewController.bookAppointmentPage);
+router.get('/patient/dashboard', authMiddleware, isPatient, patientDashboard);
+router.get('/doctors', authMiddleware, isPatient, doctorsPage);
+router.get('/book-appointment/:doctorId', authMiddleware, isPatient, bookAppointmentPage);
 
 // Doctor routes
-router.get('/doctor/dashboard', authMiddleware, isDoctor, ViewController.doctorDashboard);
+router.get('/doctor/dashboard', authMiddleware, isDoctor, doctorDashboard);
 
-// Common routes
-router.get('/appointment/:id', authMiddleware, ViewController.appointmentDetails);
+// Common route
+router.get('/appointment/:id', authMiddleware, appointmentDetails);
 
-module.exports = router;
+export default router;

@@ -1,7 +1,8 @@
-const express = require('express');
-const router = express.Router();
-const { pool } = require('../config/db');
-const { isAuthenticated, isPatient } = require('../middleware/roleMiddleware');
+import { Router } from 'express';
+import { pool } from '../config/db.js';
+import { isAuthenticated, isPatient } from '../middlewares/roleMiddleware.js';
+
+const router = Router();
 
 // GET /patients/dashboard - Patient dashboard
 router.get('/dashboard', isAuthenticated, isPatient, async (req, res) => {
@@ -320,4 +321,4 @@ router.get('/medical-history', isAuthenticated, isPatient, async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

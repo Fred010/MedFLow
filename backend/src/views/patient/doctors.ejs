@@ -1,0 +1,253 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<section class="page-header">
+    <div class="container">
+        <h1 class="display-5 fw-bold">
+            <i class="bi bi-person-badge"></i> Find a Doctor
+        </h1>
+        <p class="lead">Browse our network of qualified healthcare professionals</p>
+    </div>
+</section>
+
+<div class="content-wrapper">
+    <div class="container">
+        <!-- Search and Filter Section -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Search by name</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="searchInput" 
+                                       placeholder="Search doctor name...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Filter by specialty</label>
+                                <select class="form-select" id="specialtyFilter">
+                                    <option value="">All Specialties</option>
+                                    <% specialties.forEach(specialty => { %>
+                                        <option value="<%= specialty %>"><%= specialty %></option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Count -->
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <p class="text-muted">
+                    Showing <strong id="resultCount"><%= doctors.length %></strong> doctor(s)
+                </p>
+            </div>
+        </div>
+
+        <!-- Doctors Grid -->
+        <div class="row g-4" id="doctorsGrid">
+            <% if (doctors.length === 0) { %>
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-muted mt-3">No doctors found</h4>
+                    <p class="text-muted">Try adjusting your filters</p>
+                </div>
+            <% } else { %>
+                <% doctors.forEach(doctor => { %>
+                    <div class="col-md-6 col-lg-4 doctor-card" 
+                         data-name="<%= doctor.name.toLowerCase() %>"
+                         data-specialty="<%= doctor.specialty %>">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="text-center mb-3">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center"
+                                         style="width: 80px; height: 80px;">
+                                        <i class="bi bi-person-fill text-primary" style="font-size: 2.5rem;"></i>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="card-title text-center fw-bold mb-2">
+                                    Dr. <%= doctor.name %>
+                                </h5>
+                                
+                                <div class="text-center mb-3">
+                                    <span class="badge bg-info">
+                                        <%= doctor.specialty %>
+                                    </span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <p class="text-muted small mb-2">
+                                        <i class="bi bi-envelope"></i> 
+                                        <%= doctor.email %>
+                                    </p>
+                                    <p class="text-muted small mb-0">
+                                        <i class="bi bi-calendar-check"></i> 
+                                        Available for appointments
+                                    </p>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <a href="/book-appointment/<%= doctor.id %>" 
+                                       class="btn btn-primary">
+                                        <i class="bi bi-calendar-plus"></i> Book Appointment
+                                    </a>
+                                    <button class="btn btn-outline-secondary btn-sm" 
+                                            onclick="viewDoctorDetails(<%= doctor.id %>)">
+                                        <i class="bi bi-info-circle"></i> View Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+
+        <!-- No Results Message (Hidden by default) -->
+        <div id="noResults" class="row d-none">
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">No doctors match your search</h4>
+                <p class="text-muted">Try different keywords or filters</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Doctor Details Modal -->
+<div class="modal fade" id="doctorModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Doctor Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="doctorDetailsContent">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const specialtyFilter = document.getElementById('specialtyFilter');
+    const doctorsGrid = document.getElementById('doctorsGrid');
+    const resultCount = document.getElementById('resultCount');
+    const noResults = document.getElementById('noResults');
+
+    // Search and filter functionality
+    function filterDoctors() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedSpecialty = specialtyFilter.value;
+        const doctorCards = document.querySelectorAll('.doctor-card');
+        let visibleCount = 0;
+
+        doctorCards.forEach(card => {
+            const doctorName = card.dataset.name;
+            const doctorSpecialty = card.dataset.specialty;
+            
+            const matchesSearch = doctorName.includes(searchTerm);
+            const matchesSpecialty = !selectedSpecialty || doctorSpecialty === selectedSpecialty;
+
+            if (matchesSearch && matchesSpecialty) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        resultCount.textContent = visibleCount;
+        
+        if (visibleCount === 0) {
+            doctorsGrid.classList.add('d-none');
+            noResults.classList.remove('d-none');
+        } else {
+            doctorsGrid.classList.remove('d-none');
+            noResults.classList.add('d-none');
+        }
+    }
+
+    searchInput.addEventListener('input', filterDoctors);
+    specialtyFilter.addEventListener('change', filterDoctors);
+
+    // View doctor details
+    async function viewDoctorDetails(doctorId) {
+        const modal = new bootstrap.Modal(document.getElementById('doctorModal'));
+        const content = document.getElementById('doctorDetailsContent');
+        
+        modal.show();
+        content.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+
+        try {
+            const response = await fetch(`/api/doctors/${doctorId}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                content.innerHTML = `
+                    <div class="text-center mb-4">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center"
+                             style="width: 100px; height: 100px;">
+                            <i class="bi bi-person-fill text-primary" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                    <h4 class="text-center fw-bold mb-3">Dr. ${data.doctor.name}</h4>
+                    <div class="text-center mb-4">
+                        <span class="badge bg-info fs-6">${data.doctor.specialty}</span>
+                    </div>
+                    <div class="mb-3">
+                        <p class="mb-2">
+                            <i class="bi bi-envelope text-primary"></i> 
+                            <strong>Email:</strong> ${data.doctor.email}
+                        </p>
+                        <p class="mb-2">
+                            <i class="bi bi-calendar-check text-primary"></i> 
+                            <strong>Status:</strong> Available for appointments
+                        </p>
+                        <p class="mb-0">
+                            <i class="bi bi-clock text-primary"></i> 
+                            <strong>Joined:</strong> ${new Date(data.doctor.created_at).toLocaleDateString()}
+                        </p>
+                    </div>
+                    <div class="d-grid">
+                        <a href="/book-appointment/${doctorId}" class="btn btn-primary">
+                            <i class="bi bi-calendar-plus"></i> Book Appointment
+                        </a>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Failed to load doctor details
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            content.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> An error occurred
+                </div>
+            `;
+        }
+    }
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,242 @@
+<%- include('../partials/header') %>
+<%- include('../partials/navbar') %>
+
+<section class="page-header">
+    <div class="container">
+        <h1 class="display-5 fw-bold">
+            <i class="bi bi-file-text"></i> Appointment Details
+        </h1>
+        <p class="lead">Review and manage appointment request</p>
+    </div>
+</section>
+
+<div class="content-wrapper">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Status Alert -->
+                <% if (appointment.status === 'pending') { %>
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-clock-history"></i> Action Required
+                        </h5>
+                        <p class="mb-0">This appointment is pending your approval. Please review the details below and approve or decline the request.</p>
+                    </div>
+                <% } else if (appointment.status === 'approved') { %>
+                    <div class="alert alert-success">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-check-circle"></i> Appointment Approved
+                        </h5>
+                        <p class="mb-0">You have approved this appointment. The patient has been notified via email.</p>
+                    </div>
+                <% } else if (appointment.status === 'declined') { %>
+                    <div class="alert alert-danger">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-x-circle"></i> Appointment Declined
+                        </h5>
+                        <p class="mb-0">You have declined this appointment request. The patient has been notified.</p>
+                    </div>
+                <% } %>
+
+                <!-- Appointment Information Card -->
+                <div class="card shadow-lg mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle"></i> Appointment Information
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Appointment ID</h6>
+                                <p class="fw-bold">#<%= appointment.id %></p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Status</h6>
+                                <p>
+                                    <% if (appointment.status === 'pending') { %>
+                                        <span class="badge bg-warning fs-6">
+                                            <i class="bi bi-clock"></i> Pending
+                                        </span>
+                                    <% } else if (appointment.status === 'approved') { %>
+                                        <span class="badge bg-success fs-6">
+                                            <i class="bi bi-check-circle"></i> Approved
+                                        </span>
+                                    <% } else if (appointment.status === 'declined') { %>
+                                        <span class="badge bg-danger fs-6">
+                                            <i class="bi bi-x-circle"></i> Declined
+                                        </span>
+                                    <% } %>
+                                </p>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">
+                                    <i class="bi bi-calendar3"></i> Appointment Date & Time
+                                </h6>
+                                <p class="fw-bold">
+                                    <%= new Date(appointment.appointment_date).toLocaleDateString('en-US', { 
+                                        weekday: 'long', 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                    }) %>
+                                </p>
+                                <p class="text-primary fs-5 fw-bold">
+                                    <%= new Date(appointment.appointment_date).toLocaleTimeString('en-US', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit' 
+                                    }) %>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">
+                                    <i class="bi bi-clock"></i> Request Submitted
+                                </h6>
+                                <p class="text-muted">
+                                    <%= new Date(appointment.created_at).toLocaleString() %>
+                                </p>
+                                <% if (appointment.updated_at !== appointment.created_at) { %>
+                                    <p class="text-muted small">
+                                        Last updated: <%= new Date(appointment.updated_at).toLocaleString() %>
+                                    </p>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="mb-0">
+                            <h6 class="text-muted mb-2">
+                                <i class="bi bi-file-text"></i> Reason for Visit
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <p class="mb-0"><%= appointment.reason %></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patient Information Card -->
+                <div class="card shadow-lg mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person"></i> Patient Information
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <div class="bg-info bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center"
+                                     style="width: 80px; height: 80px;">
+                                    <i class="bi bi-person-fill text-info" style="font-size: 2.5rem;"></i>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <h4 class="mb-2 fw-bold"><%= appointment.patient_name %></h4>
+                                <p class="text-muted mb-2">
+                                    <i class="bi bi-envelope"></i> <%= appointment.patient_email %>
+                                </p>
+                                <p class="text-muted mb-0">
+                                    <i class="bi bi-person-badge"></i> Patient
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Card -->
+                <div class="card shadow-lg">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3">
+                            <i class="bi bi-gear"></i> Actions
+                        </h5>
+                        
+                        <% if (appointment.status === 'pending') { %>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-6">
+                                    <button class="btn btn-success btn-lg w-100" onclick="approveAppointment()">
+                                        <i class="bi bi-check-circle"></i> Approve Appointment
+                                    </button>
+                                </div>
+                                <div class="col-md-6">
+                                    <button class="btn btn-danger btn-lg w-100" onclick="declineAppointment()">
+                                        <i class="bi bi-x-circle"></i> Decline Appointment
+                                    </button>
+                                </div>
+                            </div>
+                        <% } %>
+                        
+                        <div class="d-grid">
+                            <a href="/doctor/dashboard" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function approveAppointment() {
+        if (!confirm('Are you sure you want to approve this appointment? The patient will be notified via email.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/appointments/<%= appointment.id %>/approve', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Appointment approved successfully! Patient has been notified.');
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to approve appointment');
+            }
+        } catch (error) {
+            console.error('Approve error:', error);
+            alert('An error occurred. Please try again.');
+        }
+    }
+
+    async function declineAppointment() {
+        if (!confirm('Are you sure you want to decline this appointment? The patient will be notified via email.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/appointments/<%= appointment.id %>/decline', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Appointment declined. Patient has been notified.');
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to decline appointment');
+            }
+        } catch (error) {
+            console.error('Decline error:', error);
+            alert('An error occurred. Please try again.');
+        }
+    }
+</script>
+
+<%- include('../partials/footer') %>

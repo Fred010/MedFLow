@@ -1,11 +1,11 @@
 // src/controllers/doctorController.js
-const User = require('../models/User');
+import { getAllDoctors as _getAllDoctors, getDoctorsBySpecialty as _getDoctorsBySpecialty, findById } from '../models/User.js';
 
 class DoctorController {
   // Get all doctors
   static async getAllDoctors(req, res) {
     try {
-      const doctors = await User.getAllDoctors();
+      const doctors = await _getAllDoctors();
 
       res.json({
         success: true,
@@ -33,7 +33,7 @@ class DoctorController {
         });
       }
 
-      const doctors = await User.getDoctorsBySpecialty(specialty);
+      const doctors = await _getDoctorsBySpecialty(specialty);
 
       res.json({
         success: true,
@@ -54,7 +54,7 @@ class DoctorController {
   static async getDoctorById(req, res) {
     try {
       const { id } = req.params;
-      const doctor = await User.findById(id);
+      const doctor = await findById(id);
 
       if (!doctor) {
         return res.status(404).json({
@@ -93,7 +93,7 @@ class DoctorController {
   static async getSpecialties(req, res) {
     try {
       const query = 'SELECT DISTINCT specialty FROM users WHERE role = "doctor" AND specialty IS NOT NULL ORDER BY specialty';
-      const db = require('../../config/db');
+      const db = require('../config/db').default;
       const [specialties] = await db.promise().query(query);
 
       res.json({
@@ -111,4 +111,4 @@ class DoctorController {
   }
 }
 
-module.exports = DoctorController;
+export default DoctorController;
