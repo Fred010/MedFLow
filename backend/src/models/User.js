@@ -1,11 +1,13 @@
 // src/models/User.js
 import db from '../config/db.js';
-import { hash, compare } from 'bcrypt';
+import bcrypt from 'bcryptjs'; // use bcryptjs for hashing
 
 // Create new user
 export const createUser = async (userData) => {
   const { name, email, password, role, specialty } = userData;
-  const hashedPassword = await hash(password, 10);
+  
+  // Hash the password
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   const query = `
     INSERT INTO users (name, email, password, role, specialty)
@@ -56,7 +58,7 @@ export const getDoctorsBySpecialty = async (specialty) => {
 
 // Verify password
 export const verifyPassword = async (plainPassword, hashedPassword) => {
-  return await compare(plainPassword, hashedPassword);
+  return await bcrypt.compare(plainPassword, hashedPassword);
 };
 
 // Update user

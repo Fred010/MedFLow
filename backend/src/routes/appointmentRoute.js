@@ -1,42 +1,37 @@
-// src/routes/appointmentRoutes.js
-
 import express from "express";
-// Import individual functions using named imports { ... }
-import { 
-    createAppointment,
-    getPatientAppointments,
-    cancelAppointment,
-    getDoctorAppointments,
-    getPendingAppointments,
-    approveAppointment,
-    declineAppointment,
-    getAppointment
+import {
+  createAppointmentController,
+  getPatientAppointmentsController,
+  cancelAppointmentController,
+  getDoctorAppointmentsController,
+  getPendingAppointmentsController,
+  approveAppointmentController,
+  declineAppointmentController,
+  getAppointmentController,
+  getDoctorStatsController
 } from "../controllers/appointmentController.js";
 
-import { authMiddleware } from "../middlewares/authMiddleware.js";
+import { authMiddleware, optionalAuth } from "../middlewares/authMiddleware.js";
 import { isPatient, isDoctor } from "../middlewares/roleMiddleware.js";
 
 const router = express.Router();
 
-// All routes require authentication
+//All routes require authentication
 router.use(authMiddleware);
 
-// Patient routes
-// Reference the imported functions directly
-router.post('/', isPatient, createAppointment);
-router.get('/my-appointments', isPatient, getPatientAppointments);
-router.delete('/:id', isPatient, cancelAppointment);
+//Patient routes
+router.post("/", isPatient, createAppointmentController);
+router.get("/my-appointments", isPatient, getPatientAppointmentsController);
+router.delete("/:id", isPatient, cancelAppointmentController);
 
-// Doctor routes
-router.get('/doctor/appointments', isDoctor, getDoctorAppointments);
-router.get('/doctor/pending', isDoctor, getPendingAppointments);
-// Note: getDoctorStats was likely missed in your previous code snippet, 
-// make sure it's exported from the controller if needed.
-// router.get('/doctor/stats', isDoctor, getDoctorStats); 
-router.patch('/:id/approve', isDoctor, approveAppointment);
-router.patch('/:id/decline', isDoctor, declineAppointment);
+//Doctor routes
+router.get("/doctor/appointments", isDoctor, getDoctorAppointmentsController);
+router.get("/doctor/pending", isDoctor, getPendingAppointmentsController);
+router.get("/doctor/stats", isDoctor, getDoctorStatsController);
+router.patch("/:id/approve", isDoctor, approveAppointmentController);
+router.patch("/:id/decline", isDoctor, declineAppointmentController);
 
-// Common routes (both patient and doctor)
-router.get('/:id', getAppointment);
+// 🔍 Common routes (both patient and doctor)
+router.get("/:id", getAppointmentController);
 
 export default router;

@@ -1,24 +1,24 @@
-// src/controllers/appointmentController.js
 import { findUserById } from '../models/User.js';
 import {
-  create as createAppointmentModel,
-  findById,
-  checkConflict,
-  getPatientAppointments as getPatientAppointmentsModel,
-  getDoctorAppointments as getDoctorAppointmentsModel,
-  getPendingAppointments as getPendingAppointmentsModel,
-  updateStatus,
-  delete as deleteAppointment,
-  getDoctorStats as getDoctorStatsModel
-} from '../models/Appointment.js';
-import emailService from '../utils/emailService.js';
+  createAppointment,
+  findAppointmentById,
+  checkAppointmentConflict,
+  getPatientAppointments,
+  getDoctorAppointments,
+  getPendingAppointments,
+  updateAppointmentStatus,
+  deleteAppointment,
+  getDoctorStats
+} from '../models/Appointments.js';
+import emailService from '../services/emailService.js';
 
 // Create new appointment (Patient only)
-export const createAppointment = async (req, res) => {
+export const createAppointmentController = async (req, res) => {
   try {
     const { doctor_id, appointment_date, reason } = req.body;
     const patient_id = req.user.id;
 
+    // Validation
     if (!doctor_id || !appointment_date || !reason) {
       return res.status(400).json({
         success: false,
@@ -26,6 +26,7 @@ export const createAppointment = async (req, res) => {
       });
     }
 
+    // Verify doctor exists
     const doctor = await findUserById(doctor_id);
     if (!doctor || doctor.role !== 'doctor') {
       return res.status(404).json({
@@ -34,7 +35,8 @@ export const createAppointment = async (req, res) => {
       });
     }
 
-    const hasConflict = await checkConflict(doctor_id, appointment_date);
+    // Check for conflicts
+    const hasConflict = await checkAppointmentConflict(doctor_id, appointment_date);
     if (hasConflict) {
       return res.status(400).json({
         success: false,
@@ -42,6 +44,7 @@ export const createAppointment = async (req, res) => {
       });
     }
 
+    // Ensure future appointment date
     if (new Date(appointment_date) <= new Date()) {
       return res.status(400).json({
         success: false,
@@ -49,15 +52,18 @@ export const createAppointment = async (req, res) => {
       });
     }
 
-    const appointmentId = await createAppointmentModel({
+    // Create appointment
+    const appointmentId = await createAppointment({
       patient_id,
       doctor_id,
       appointment_date,
       reason
     });
 
-    const appointment = await findById(appointmentId);
+    // Retrieve appointment details
+    const appointment = await findAppointmentById(appointmentId);
 
+    // Send notification emails
     await emailService.sendAppointmentConfirmation(appointment);
     await emailService.sendDoctorNotification(appointment);
 
@@ -75,10 +81,10 @@ export const createAppointment = async (req, res) => {
   }
 };
 
-// Get patient's appointments
-export const getPatientAppointments = async (req, res) => {
+// 🧍‍♀️ Get patient’s appointments
+export const getPatientAppointmentsController = async (req, res) => {
   try {
-    const appointments = await getPatientAppointmentsModel(req.user.id);
+    const appointments = await getPatientAppointments(req.user.id);
     res.json({
       success: true,
       count: appointments.length,
@@ -93,10 +99,10 @@ export const getPatientAppointments = async (req, res) => {
   }
 };
 
-// Get doctor's appointments
-export const getDoctorAppointments = async (req, res) => {
+// doctor’s appointments
+export const getDoctorAppointmentsController = async (req, res) => {
   try {
-    const appointments = await getDoctorAppointmentsModel(req.user.id);
+    const appointments = await getDoctorAppointments(req.user.id);
     res.json({
       success: true,
       count: appointments.length,
@@ -111,10 +117,10 @@ export const getDoctorAppointments = async (req, res) => {
   }
 };
 
-// Get pending appointments for doctor
-export const getPendingAppointments = async (req, res) => {
+//doctor’s pending appointments
+export const getPendingAppointmentsController = async (req, res) => {
   try {
-    const appointments = await getPendingAppointmentsModel(req.user.id);
+    const appointments = await getPendingAppointments(req.user.id);
     res.json({
       success: true,
       count: appointments.length,
@@ -129,11 +135,11 @@ export const getPendingAppointments = async (req, res) => {
   }
 };
 
-// Get single appointment
-export const getAppointment = async (req, res) => {
+//Get a single appointment
+export const getAppointmentController = async (req, res) => {
   try {
     const { id } = req.params;
-    const appointment = await findById(id);
+    const appointment = await findAppointmentById(id);
 
     if (!appointment) {
       return res.status(404).json({
@@ -142,6 +148,7 @@ export const getAppointment = async (req, res) => {
       });
     }
 
+    // Authorization
     if (
       (req.user.role === 'patient' && appointment.patient_id !== req.user.id) ||
       (req.user.role === 'doctor' && appointment.doctor_id !== req.user.id)
@@ -165,11 +172,11 @@ export const getAppointment = async (req, res) => {
   }
 };
 
-// Approve appointment (Doctor only)
-export const approveAppointment = async (req, res) => {
+//Approve appointment (Doctor)
+export const approveAppointmentController = async (req, res) => {
   try {
     const { id } = req.params;
-    const appointment = await findById(id);
+    const appointment = await findAppointmentById(id);
 
     if (!appointment) {
       return res.status(404).json({
@@ -192,8 +199,8 @@ export const approveAppointment = async (req, res) => {
       });
     }
 
-    await updateStatus(id, 'approved');
-    const updatedAppointment = await findById(id);
+    await updateAppointmentStatus(id, 'approved');
+    const updatedAppointment = await findAppointmentById(id);
     await emailService.sendApprovalEmail(updatedAppointment);
 
     res.json({
@@ -210,11 +217,11 @@ export const approveAppointment = async (req, res) => {
   }
 };
 
-// Decline appointment (Doctor only)
-export const declineAppointment = async (req, res) => {
+// Decline appointment (Doctor)
+export const declineAppointmentController = async (req, res) => {
   try {
     const { id } = req.params;
-    const appointment = await findById(id);
+    const appointment = await findAppointmentById(id);
 
     if (!appointment) {
       return res.status(404).json({
@@ -237,8 +244,8 @@ export const declineAppointment = async (req, res) => {
       });
     }
 
-    await updateStatus(id, 'declined');
-    const updatedAppointment = await findById(id);
+    await updateAppointmentStatus(id, 'declined');
+    const updatedAppointment = await findAppointmentById(id);
     await emailService.sendDeclineEmail(updatedAppointment);
 
     res.json({
@@ -255,11 +262,11 @@ export const declineAppointment = async (req, res) => {
   }
 };
 
-// Cancel appointment (Patient only)
-export const cancelAppointment = async (req, res) => {
+// 🗑️ Cancel appointment (Patient)
+export const cancelAppointmentController = async (req, res) => {
   try {
     const { id } = req.params;
-    const appointment = await findById(id);
+    const appointment = await findAppointmentById(id);
 
     if (!appointment) {
       return res.status(404).json({
@@ -290,10 +297,10 @@ export const cancelAppointment = async (req, res) => {
   }
 };
 
-// Get doctor statistics (for dashboard)
-export const getDoctorStats = async (req, res) => {
+//Get doctor statistics
+export const getDoctorStatsController = async (req, res) => {
   try {
-    const stats = await getDoctorStatsModel(req.user.id);
+    const stats = await getDoctorStats(req.user.id);
     res.json({
       success: true,
       stats
