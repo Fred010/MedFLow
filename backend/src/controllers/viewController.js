@@ -1,4 +1,4 @@
-// src/controllers/viewController.js
+
 import { findUserById, getAllDoctors } from '../models/User.js';
 import {
   getPatientAppointments,
@@ -7,7 +7,7 @@ import {
   getDoctorStats,
   findAppointmentById
 } from '../models/Appointments.js';
-import db from '../config/db.js'; // database import
+import db from '../config/db.js';
 
 // Home page
 export const home = async (req, res) => {

@@ -1,9 +1,19 @@
-// src/middlewares/authMiddleware.js
+import jwt from 'jsonwebtoken';
+import { findUserById } from '../models/User.js';
+
+// Helper: Extract token from cookies or Authorization header
+const getTokenFromRequest = (req) => {
+  if (req.cookies?.token) return req.cookies.token;
+  if (req.headers.authorization?.startsWith('Bearer ')) {
+    return req.headers.authorization.split(' ')[1];
+  }
+  return null;
+};
 
 // Strict authentication middleware
 export const authMiddleware = async (req, res, next) => {
   try {
-    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+    const token = getTokenFromRequest(req);
 
     if (!token) {
       return res.status(401).json({ 
@@ -15,9 +25,8 @@ export const authMiddleware = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Fetch user using named function
-    const user = await User.findUserById(decoded.id);
-
+    // Fetch user from DB
+    const user = await findUserById(decoded.id);
     if (!user) {
       return res.status(401).json({ 
         success: false, 
@@ -42,6 +51,7 @@ export const authMiddleware = async (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ success: false, message: 'Token expired. Please login again.' });
     }
+    console.error('Auth middleware error:', error);
     return res.status(500).json({ success: false, message: 'Authentication error.' });
   }
 };
@@ -49,11 +59,11 @@ export const authMiddleware = async (req, res, next) => {
 // Optional authentication middleware
 export const optionalAuth = async (req, res, next) => {
   try {
-    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+    const token = getTokenFromRequest(req);
 
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findUserById(decoded.id);
+      const user = await findUserById(decoded.id);
 
       if (user) {
         req.user = {
@@ -66,7 +76,7 @@ export const optionalAuth = async (req, res, next) => {
       }
     }
   } catch (error) {
-    // Silently fail for optional auth
+    // Ignore errors for optional auth; user will remain undefined
     req.user = null;
   }
 
