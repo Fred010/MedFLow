@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { findUserById } from '../models/User.js';
+import * as User from '../models/User.js';
 
 // Helper: Extract token from cookies or Authorization header
 const getTokenFromRequest = (req) => {
@@ -26,7 +26,7 @@ export const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Fetch user from DB
-    const user = await findUserById(decoded.id);
+    const user = await User.findUserById(decoded.id);
     if (!user) {
       return res.status(401).json({ 
         success: false, 
@@ -76,7 +76,6 @@ export const optionalAuth = async (req, res, next) => {
       }
     }
   } catch (error) {
-    // Ignore errors for optional auth; user will remain undefined
     req.user = null;
   }
 

@@ -1,6 +1,6 @@
 // src/models/User.js
 import db from '../config/db.js';
-import bcrypt from 'bcryptjs'; // use bcryptjs for hashing
+import bcrypt from 'bcryptjs';
 
 // Create new user
 export const createUser = async (userData) => {

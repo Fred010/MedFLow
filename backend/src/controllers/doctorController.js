@@ -1,14 +1,10 @@
-import { 
-  getAllDoctors as _getAllDoctors, 
-  getDoctorsBySpecialty as _getDoctorsBySpecialty, 
-  findUserById 
-} from '../models/User.js';
+import * as User from '../models/User.js';
 import db from '../config/db.js';
 
 //all doctors
 export async function getAllDoctors(req, res) {
   try {
-    const doctors = await _getAllDoctors();
+    const doctors = await User._getAllDoctors();
 
     res.json({
       success: true,
@@ -36,7 +32,7 @@ export async function getDoctorsBySpecialty(req, res) {
       });
     }
 
-    const doctors = await _getDoctorsBySpecialty(specialty);
+    const doctors = await User._getDoctorsBySpecialty(specialty);
 
     res.json({
       success: true,
@@ -57,7 +53,7 @@ export async function getDoctorsBySpecialty(req, res) {
 export async function getDoctorById(req, res) {
   try {
     const { id } = req.params;
-    const doctor = await findUserById(id);
+    const doctor = await User.findUserById(id);
 
     if (!doctor) {
       return res.status(404).json({

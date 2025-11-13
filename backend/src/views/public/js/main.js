@@ -1,4 +1,3 @@
-// MedFlow Main JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
