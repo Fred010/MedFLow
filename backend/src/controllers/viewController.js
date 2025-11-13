@@ -1,5 +1,5 @@
 
-import { findUserById, getAllDoctors } from '../models/User.js';
+import * as User from '../models/User.js';
 import {
   getPatientAppointments,
   getDoctorAppointments,
@@ -75,7 +75,7 @@ export const patientDashboard = async (req, res) => {
 // Doctors listing page
 export const doctorsPage = async (req, res) => {
   try {
-    const doctors = await getAllDoctors(); // use named export
+    const doctors = await User.getAllDoctors(); // use named export
     const [specialties] = await db.query(
       'SELECT DISTINCT specialty FROM users WHERE role = "doctor" AND specialty IS NOT NULL'
     );
@@ -96,7 +96,7 @@ export const doctorsPage = async (req, res) => {
 export const bookAppointmentPage = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    const doctor = await findUserById(doctorId); // use named export
+    const doctor = await User.findUserById(doctorId); // use named export
 
     if (!doctor || doctor.role !== 'doctor') {
       return res.status(404).render('error', {

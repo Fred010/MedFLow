@@ -1,14 +1,13 @@
-// src/routes/doctorRoutes.js
-import Router from 'express';
+import express from 'express';
+import { optionalAuth, authMiddleware } from '../middlewares/authMiddleware.js';
 import { getAllDoctors, getDoctorsBySpecialty, getDoctorById, getSpecialties } from '../controllers/doctorController.js';
-import { optionalAuth } from '../middlewares/authMiddleware.js';
 
-const router = Router();
+const router = express.Router();
 
-// Public routes (patients can view doctors without login)
-router.get('/', optionalAuth, getAllDoctors);
+// Public doctor data routes
+router.get('/', optionalAuth, authMiddleware, getAllDoctors);
 router.get('/specialties', optionalAuth, getSpecialties);
 router.get('/specialty/:specialty', optionalAuth, getDoctorsBySpecialty);
-router.get('/:id', optionalAuth, getDoctorById);
+router.get('/:id', optionalAuth, authMiddleware, getDoctorById);
 
 export default router;
