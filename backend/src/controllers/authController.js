@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import * as User from '../models/User.js';
 
-//JWT Token generation
+// Generate JWT token
 const generateToken = (user) => {
   return jwt.sign(
     { id: user.id, role: user.role },
@@ -11,32 +11,28 @@ const generateToken = (user) => {
   );
 };
 
-//Register new user
+// Register new user
 export const register = async (req, res) => {
   try {
     const { name, email, password, role, specialty } = req.body;
 
-    // Check for required fields
     if (!name || !email || !password || !role) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, password, and role are required.'
+        message: 'Please fill in all required fields.'
       });
     }
 
-    // Check if user already exists
     const existingUser = await User.findUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'Email is already in use.'
+        message: 'That email address is already registered.'
       });
     }
 
-    // Hash password securely
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user in DB
     const newUser = await User.createUser({
       name,
       email,
@@ -45,19 +41,18 @@ export const register = async (req, res) => {
       specialty: role === 'doctor' ? specialty : null
     });
 
-    // Automatically login the user after registration
     const token = generateToken(newUser);
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // true only in HTTPS
-      sameSite: 'lax', // needed for local testing
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000
     });
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully.',
+      message: 'Account created successfully.',
       user: {
         id: newUser.id,
         name: newUser.name,
@@ -70,12 +65,12 @@ export const register = async (req, res) => {
     console.error('Register error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during registration.'
+      message: 'Failed to create your account. Please try again.'
     });
   }
 };
 
-//login user
+// Login user
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -83,7 +78,7 @@ export const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required.'
+        message: 'Please enter both email and password.'
       });
     }
 
@@ -91,7 +86,7 @@ export const login = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials.'
+        message: 'Invalid email or password.'
       });
     }
 
@@ -99,18 +94,17 @@ export const login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials.'
+        message: 'Invalid email or password.'
       });
     }
 
     const token = generateToken(user);
 
-    //Set token cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000
     });
 
     res.json({
@@ -128,12 +122,12 @@ export const login = async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during login.'
+      message: 'Failed to log you in. Please try again.'
     });
   }
 };
 
-//logout user
+// Logout user
 export const logout = (req, res) => {
   try {
     res.clearCookie('token', {
@@ -144,24 +138,24 @@ export const logout = (req, res) => {
 
     res.json({
       success: true,
-      message: 'Logged out successfully.'
+      message: 'You have been logged out successfully.'
     });
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error during logout.'
+      message: 'Failed to log you out. Please try again.'
     });
   }
 };
 
-//Get current authenticated user
+// Get current authenticated user
 export const getCurrentUser = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'Not authenticated.'
+        message: 'You are not logged in.'
       });
     }
 
@@ -181,31 +175,31 @@ export const getCurrentUser = async (req, res) => {
     console.error('Get current user error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error fetching current user.'
+      message: 'Failed to retrieve your account details.'
     });
   }
 };
 
-//Verify JWT token validity
+// Verify JWT token validity
 export const verifyToken = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'Not authenticated.'
+        message: 'You are not logged in.'
       });
     }
 
     res.json({
       success: true,
-      message: 'Token is valid.',
+      message: 'Your session is active.',
       user: req.user
     });
   } catch (error) {
     console.error('Verify token error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error verifying token.'
+      message: 'Failed to verify your session. Please try again.'
     });
   }
 };

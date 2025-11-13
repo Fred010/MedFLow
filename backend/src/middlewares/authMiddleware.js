@@ -16,9 +16,9 @@ export const authMiddleware = async (req, res, next) => {
     const token = getTokenFromRequest(req);
 
     if (!token) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Access denied. No token provided.' 
+      return res.status(401).json({
+        success: false,
+        message: 'Access denied. Please log in to continue.'
       });
     }
 
@@ -28,9 +28,9 @@ export const authMiddleware = async (req, res, next) => {
     // Fetch user from DB
     const user = await User.findUserById(decoded.id);
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid token. User not found.' 
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired session. Please log in again.'
       });
     }
 
@@ -46,13 +46,23 @@ export const authMiddleware = async (req, res, next) => {
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ success: false, message: 'Invalid token.' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid authentication token.'
+      });
     }
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ success: false, message: 'Token expired. Please login again.' });
+      return res.status(401).json({
+        success: false,
+        message: 'Your session has expired. Please log in again.'
+      });
     }
+
     console.error('Auth middleware error:', error);
-    return res.status(500).json({ success: false, message: 'Authentication error.' });
+    return res.status(500).json({
+      success: false,
+      message: 'Authentication failed. Please try again.'
+    });
   }
 };
 
@@ -63,7 +73,7 @@ export const optionalAuth = async (req, res, next) => {
 
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await findUserById(decoded.id);
+      const user = await User.findUserById(decoded.id);
 
       if (user) {
         req.user = {
@@ -73,7 +83,11 @@ export const optionalAuth = async (req, res, next) => {
           role: user.role,
           specialty: user.specialty || null
         };
+      } else {
+        req.user = null;
       }
+    } else {
+      req.user = null;
     }
   } catch (error) {
     req.user = null;

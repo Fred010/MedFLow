@@ -1,7 +1,7 @@
 import * as User from '../models/User.js';
 import db from '../config/db.js';
 
-//all doctors
+// Get all doctors
 export async function getAllDoctors(req, res) {
   try {
     const doctors = await User._getAllDoctors();
@@ -15,12 +15,12 @@ export async function getAllDoctors(req, res) {
     console.error('Get all doctors error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve doctors.'
+      message: 'Failed to retrieve doctors. Please try again.'
     });
   }
 }
 
-//doctors by specialty
+// Get doctors by specialty
 export async function getDoctorsBySpecialty(req, res) {
   try {
     const { specialty } = req.params;
@@ -28,7 +28,7 @@ export async function getDoctorsBySpecialty(req, res) {
     if (!specialty) {
       return res.status(400).json({
         success: false,
-        message: 'Specialty is required.'
+        message: 'Please specify a specialty to search.'
       });
     }
 
@@ -44,12 +44,12 @@ export async function getDoctorsBySpecialty(req, res) {
     console.error('Get doctors by specialty error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve doctors.'
+      message: 'Failed to retrieve doctors. Please try again.'
     });
   }
 }
 
-//single doctor details
+// Get a single doctor’s details
 export async function getDoctorById(req, res) {
   try {
     const { id } = req.params;
@@ -58,14 +58,14 @@ export async function getDoctorById(req, res) {
     if (!doctor) {
       return res.status(404).json({
         success: false,
-        message: 'Doctor not found.'
+        message: 'That doctor could not be found.'
       });
     }
 
     if (doctor.role !== 'doctor') {
       return res.status(404).json({
         success: false,
-        message: 'User is not a doctor.'
+        message: 'This user is not registered as a doctor.'
       });
     }
 
@@ -83,15 +83,21 @@ export async function getDoctorById(req, res) {
     console.error('Get doctor by ID error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve doctor information.'
+      message: 'Failed to retrieve doctor details. Please try again.'
     });
   }
 }
 
-// Get available specialties
+// Get all available specialties
 export async function getSpecialties(req, res) {
   try {
-    const query = 'SELECT DISTINCT specialty FROM users WHERE role = "doctor" AND specialty IS NOT NULL ORDER BY specialty';
+    const query = `
+      SELECT DISTINCT specialty 
+      FROM users 
+      WHERE role = "doctor" 
+        AND specialty IS NOT NULL 
+      ORDER BY specialty
+    `;
     const [specialties] = await db.promise().query(query);
 
     res.json({
@@ -103,7 +109,7 @@ export async function getSpecialties(req, res) {
     console.error('Get specialties error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve specialties.'
+      message: 'Failed to load available specialties. Please try again.'
     });
   }
 }

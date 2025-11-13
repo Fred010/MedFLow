@@ -1,4 +1,3 @@
-
 import * as User from '../models/User.js';
 import {
   getPatientAppointments,
@@ -18,7 +17,7 @@ export const home = async (req, res) => {
     });
   } catch (error) {
     console.error('Home page error:', error);
-    res.status(500).render('error', { message: 'Server error', error });
+    res.status(500).render('error', { message: 'An unexpected error occurred while loading the homepage.' });
   }
 };
 
@@ -35,7 +34,7 @@ export const loginPage = async (req, res) => {
     });
   } catch (error) {
     console.error('Login page error:', error);
-    res.status(500).render('error', { message: 'Server error', error });
+    res.status(500).render('error', { message: 'Unable to load the login page. Please try again.' });
   }
 };
 
@@ -52,7 +51,7 @@ export const registerPage = async (req, res) => {
     });
   } catch (error) {
     console.error('Register page error:', error);
-    res.status(500).render('error', { message: 'Server error', error });
+    res.status(500).render('error', { message: 'Unable to load the registration page. Please try again.' });
   }
 };
 
@@ -68,14 +67,14 @@ export const patientDashboard = async (req, res) => {
     });
   } catch (error) {
     console.error('Patient dashboard error:', error);
-    res.status(500).render('error', { message: 'Server error', error });
+    res.status(500).render('error', { message: 'Failed to retrieve your dashboard details. Please try again.' });
   }
 };
 
 // Doctors listing page
 export const doctorsPage = async (req, res) => {
   try {
-    const doctors = await User.getAllDoctors(); // use named export
+    const doctors = await User.getAllDoctors();
     const [specialties] = await db.query(
       'SELECT DISTINCT specialty FROM users WHERE role = "doctor" AND specialty IS NOT NULL'
     );
@@ -88,7 +87,7 @@ export const doctorsPage = async (req, res) => {
     });
   } catch (error) {
     console.error('Doctors page error:', error);
-    res.status(500).render('error', { message: 'Server error', error });
+    res.status(500).render('error', { message: 'Failed to load doctor listings. Please try again.' });
   }
 };
 
@@ -96,11 +95,11 @@ export const doctorsPage = async (req, res) => {
 export const bookAppointmentPage = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    const doctor = await User.findUserById(doctorId); // use named export
+    const doctor = await User.findUserById(doctorId);
 
     if (!doctor || doctor.role !== 'doctor') {
       return res.status(404).render('error', {
-        message: 'Doctor not found',
+        message: 'The selected doctor could not be found.',
         error: { status: 404 }
       });
     }
@@ -112,7 +111,7 @@ export const bookAppointmentPage = async (req, res) => {
     });
   } catch (error) {
     console.error('Book appointment page error:', error);
-    res.status(500).render('error', { message: 'Server error', error });
+    res.status(500).render('error', { message: 'Unable to load the appointment booking page. Please try again.' });
   }
 };
 
@@ -132,7 +131,7 @@ export const doctorDashboard = async (req, res) => {
     });
   } catch (error) {
     console.error('Doctor dashboard error:', error);
-    res.status(500).render('error', { message: 'Server error', error });
+    res.status(500).render('error', { message: 'Failed to retrieve your dashboard statistics.' });
   }
 };
 
@@ -144,7 +143,7 @@ export const appointmentDetails = async (req, res) => {
 
     if (!appointment) {
       return res.status(404).render('error', {
-        message: 'Appointment not found',
+        message: 'This appointment could not be found.',
         error: { status: 404 }
       });
     }
@@ -155,14 +154,15 @@ export const appointmentDetails = async (req, res) => {
       (req.user.role === 'doctor' && appointment.doctor_id !== req.user.id)
     ) {
       return res.status(403).render('error', {
-        message: 'Access denied',
+        message: 'You do not have permission to view this appointment.',
         error: { status: 403 }
       });
     }
 
-    const viewPath = req.user.role === 'doctor'
-      ? 'doctor/appointment-details'
-      : 'patient/appointment-details';
+    const viewPath =
+      req.user.role === 'doctor'
+        ? 'doctor/appointment-details'
+        : 'patient/appointment-details';
 
     res.render(viewPath, {
       title: 'Appointment Details - MedFlow',
@@ -171,6 +171,6 @@ export const appointmentDetails = async (req, res) => {
     });
   } catch (error) {
     console.error('Appointment details error:', error);
-    res.status(500).render('error', { message: 'Server error', error });
+    res.status(500).render('error', { message: 'Unable to load appointment details. Please try again.' });
   }
 };

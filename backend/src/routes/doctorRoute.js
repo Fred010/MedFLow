@@ -4,7 +4,6 @@ import { getAllDoctors, getDoctorsBySpecialty, getDoctorById, getSpecialties } f
 
 const router = express.Router();
 
-// Public doctor data routes
 router.get('/', optionalAuth, authMiddleware, getAllDoctors);
 router.get('/specialties', optionalAuth, getSpecialties);
 router.get('/specialty/:specialty', optionalAuth, getDoctorsBySpecialty);

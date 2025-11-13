@@ -1,5 +1,5 @@
 // src/routes/viewRoutes.js
-import { Router } from 'express';
+import express from 'express';
 import { 
   home, 
   loginPage, 
@@ -14,7 +14,7 @@ import {
 import { authMiddleware, optionalAuth } from '../middlewares/authMiddleware.js';
 import { isPatient, isDoctor } from '../middlewares/roleMiddleware.js';
 
-const router = Router();
+const router = express.Router();
 
 // Public routes
 router.get('/', optionalAuth, home);
@@ -29,7 +29,7 @@ router.get('/book-appointment/:doctorId', authMiddleware, isPatient, bookAppoint
 // Doctor routes
 router.get('/doctor/dashboard', authMiddleware, isDoctor, doctorDashboard);
 
-// Common route
+// Shared route for viewing appointment details
 router.get('/appointment/:id', authMiddleware, appointmentDetails);
 
 export default router;
