@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import db from './config/db.js';
-
+import patientRoutes from './routes/patientRoute.js';
 import authRoutes from './routes/authRoute.js';
 import appointmentRoutes from './routes/appointmentRoute.js';
 import doctorRoutes from './routes/doctorRoute.js';
@@ -24,11 +24,13 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '..', '..', 'frontend', 'public')));
 
 // Views
+app.set('views', path.join(__dirname, '..', '..', 'frontend', 'views'));
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+
+
 
 // Test DB connection
 db.getConnection((err, connection) => {
@@ -45,6 +47,7 @@ app.use('/', viewRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/doctors', doctorRoutes);
+app.use('/patient', patientRoutes);//
 
 // 404 handler
 app.use((req, res) => {
@@ -58,7 +61,7 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).render('error', {
-    message: err.message || 'Something went wrong',
+    message: err.message || 'Error occurred',
     error: process.env.NODE_ENV === 'development' ? err : {}
   });
 });
