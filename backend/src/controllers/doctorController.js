@@ -1,10 +1,10 @@
 import * as User from '../models/User.js';
 import db from '../config/db.js';
 
-//all doctors
-export async function getAllDoctors(req, res) {
+// Get all doctors
+export const getAllDoctors = async (req, res) => {
   try {
-    const doctors = await User._getAllDoctors();
+    const doctors = await User.getAllDoctors();
 
     res.json({
       success: true,
@@ -18,10 +18,10 @@ export async function getAllDoctors(req, res) {
       message: 'Failed to retrieve doctors.'
     });
   }
-}
+};
 
-//doctors by specialty
-export async function getDoctorsBySpecialty(req, res) {
+// Get doctors by specialty
+export const getDoctorsBySpecialty = async (req, res) => {
   try {
     const { specialty } = req.params;
 
@@ -32,7 +32,7 @@ export async function getDoctorsBySpecialty(req, res) {
       });
     }
 
-    const doctors = await User._getDoctorsBySpecialty(specialty);
+    const doctors = await User.getDoctorsBySpecialty(specialty);
 
     res.json({
       success: true,
@@ -47,13 +47,13 @@ export async function getDoctorsBySpecialty(req, res) {
       message: 'Failed to retrieve doctors.'
     });
   }
-}
+};
 
-//single doctor details
-export async function getDoctorById(req, res) {
+// Get single doctor details
+export const getDoctorById = async (req, res) => {
   try {
     const { id } = req.params;
-    const doctor = await User.findUserById(id);
+    const doctor = await User.findById(id);
 
     if (!doctor) {
       return res.status(404).json({
@@ -86,13 +86,13 @@ export async function getDoctorById(req, res) {
       message: 'Failed to retrieve doctor information.'
     });
   }
-}
+};
 
 // Get available specialties
-export async function getSpecialties(req, res) {
+export const getSpecialties = async (req, res) => {
   try {
     const query = 'SELECT DISTINCT specialty FROM users WHERE role = "doctor" AND specialty IS NOT NULL ORDER BY specialty';
-    const [specialties] = await db.promise().query(query);
+    const [specialties] = await db.query(query);
 
     res.json({
       success: true,
@@ -106,4 +106,4 @@ export async function getSpecialties(req, res) {
       message: 'Failed to retrieve specialties.'
     });
   }
-}
+};

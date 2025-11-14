@@ -1,5 +1,5 @@
 // config/db.js
-import mysql from 'mysql2/promise';
+import mysql from 'mysql2';
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -20,4 +20,4 @@ console.log('DB CONFIG:', {
   database: process.env.DB_NAME || 'medflow',
 });
 
-export default pool;
+export default pool.promise();

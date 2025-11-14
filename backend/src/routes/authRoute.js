@@ -1,20 +1,16 @@
-import express from "express";
-import { register, login, logout, verifyToken,getCurrentUser } from "../controllers/authController.js";
-import { authMiddleware, optionalAuth } from "../middlewares/authMiddleware.js";
-
+import express from 'express';
+import * as AuthController from '../controllers/authController.js';
+import { authMiddleware } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
 // Public routes
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', AuthController.register);
+router.post('/login', AuthController.login);
 
 // Protected routes
-router.post('/logout', authMiddleware, logout);
-router.get('/verify', authMiddleware, verifyToken);
-router.get('/me', authMiddleware, getCurrentUser);
-router.get('/optional', optionalAuth, (req, res) => {
-res.json({ success: true, user: req.user || null });
-});
+router.post('/logout', authMiddleware, AuthController.logout);
+router.get('/me', authMiddleware, AuthController.getCurrentUser);
+router.get('/verify', authMiddleware, AuthController.verifyToken);
 
 export default router;

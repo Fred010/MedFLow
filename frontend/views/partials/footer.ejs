@@ -1,3 +1,4 @@
+<% var user = typeof user !== 'undefined' ? user : null; %>
 <footer class="mt-5">
     <div class="container">
         <div class="row">
@@ -14,8 +15,7 @@
                 <h5>Quick Links</h5>
                 <ul class="list-unstyled">
                     <li><a href="/" class="text-light text-decoration-none">Home</a></li>
-                    <!-- Fix: Safely check if 'user' is defined -->
-                    <% if (typeof user !== 'undefined' && user) { %> 
+                    <% if (user) { %>
                         <% if (user.role === 'patient') { %>
                             <li><a href="/doctors" class="text-light text-decoration-none">Find Doctors</a></li>
                             <li><a href="/patient/dashboard" class="text-light text-decoration-none">Dashboard</a></li>
@@ -68,11 +68,8 @@
         const alerts = document.querySelectorAll('.alert');
         alerts.forEach(alert => {
             setTimeout(() => {
-                // Ensure Bootstrap JS is loaded before calling new bootstrap.Alert
-                if (window.bootstrap && bootstrap.Alert) {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
             }, 5000);
         });
     });

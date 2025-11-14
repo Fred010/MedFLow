@@ -1,21 +1,20 @@
-// server.js
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import express from "express";
-import cookieParser from "cookie-parser";
-import db from "./config/db.js";
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import db from './config/db.js';
+import patientRoutes from './routes/patientRoute.js';
+import authRoutes from './routes/authRoute.js';
+import appointmentRoutes from './routes/appointmentRoute.js';
+import doctorRoutes from './routes/doctorRoute.js';
+import viewRoutes from './routes/viewRoute.js';
 
-import authRoutes from "./routes/authRoute.js";
-import appointmentRoutes from "./routes/appointmentRoute.js";
-import doctorRoutes from "./routes/doctorRoute.js";
-import viewRoutes from "./routes/viewRoute.js";
-
-// Ensure __dirname works in ES modules
+// Setup __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Explicitly load .env from project root
+// Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
@@ -25,29 +24,29 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(express.static(path.join(__dirname, '../../frontend/public')));
 
-// Static files
-app.use(express.static(path.join(__dirname, 'public')));
-
-// View engine setup
+// Views
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, '../../frontend/views'));
 
-// Test database connection
+// Test DB connection
 db.getConnection((err, connection) => {
   if (err) {
     console.error('Database connection failed:', err.message);
     process.exit(1);
   }
-  console.log('✓ Database connected successfully');
+  console.log('Database connected successfully');
   connection.release();
 });
+
 
 // Routes
 app.use('/', viewRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/doctors', doctorRoutes);
+app.use('/patient', patientRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -57,26 +56,20 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
+// Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).render('error', {
-    message: err.message || 'Internal Server Error',
+    message: err.message || 'Error Message',
     error: process.env.NODE_ENV === 'development' ? err : {}
   });
 });
 
+// Start server
 app.listen(PORT, () => {
-  console.log(`✓ Server running on http://localhost:${PORT}`);
-  console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 
-  // Log loaded DB config to confirm dotenv works
-  console.log('DB CONFIG:', {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD ? '***' : '(none)',
-    database: process.env.DB_NAME,
-  });
 });
 
 export default app;

@@ -1,5 +1,4 @@
-// src/models/Appointment.js
-import db from '../config/db.js'; 
+import db from '../config/db.js';
 
 // Create new appointment
 export const createAppointment = async ({ patient_id, doctor_id, appointment_date, reason }) => {
@@ -18,7 +17,7 @@ export const createAppointment = async ({ patient_id, doctor_id, appointment_dat
   return result.insertId;
 };
 
-// Find appointment by ID with user details
+// Find appointment by ID with joined user info
 export const findAppointmentById = async (id) => {
   const query = `
     SELECT 
@@ -73,7 +72,7 @@ export const getDoctorAppointments = async (doctorId) => {
   return rows;
 };
 
-// Get pending appointments for doctor
+// Get pending appointments for a doctor
 export const getPendingAppointments = async (doctorId) => {
   const query = `
     SELECT 
@@ -92,23 +91,23 @@ export const getPendingAppointments = async (doctorId) => {
 
 // Update appointment status
 export const updateAppointmentStatus = async (id, status) => {
-  const query = 'UPDATE appointments SET status = ? WHERE id = ?';
+  const query = `UPDATE appointments SET status = ? WHERE id = ?`;
   await db.query(query, [status, id]);
 };
 
-// Check for conflicting appointments
+// Check conflicting appointments
 export const checkAppointmentConflict = async (doctorId, appointmentDate, excludeId = null) => {
   let query = `
-    SELECT * FROM appointments 
-    WHERE doctor_id = ? 
-    AND appointment_date = ? 
+    SELECT * FROM appointments
+    WHERE doctor_id = ?
+    AND appointment_date = ?
     AND status IN ('pending', 'approved')
   `;
-
+  
   const params = [doctorId, appointmentDate];
 
   if (excludeId) {
-    query += ' AND id != ?';
+    query += ` AND id != ?`;
     params.push(excludeId);
   }
 
@@ -116,7 +115,7 @@ export const checkAppointmentConflict = async (doctorId, appointmentDate, exclud
   return rows.length > 0;
 };
 
-// Get upcoming appointments (for reminders)
+// Get upcoming approved appointments
 export const getUpcomingAppointments = async (date) => {
   const query = `
     SELECT 
@@ -139,18 +138,18 @@ export const getUpcomingAppointments = async (date) => {
 
 // Delete appointment
 export const deleteAppointment = async (id) => {
-  const query = 'DELETE FROM appointments WHERE id = ?';
+  const query = `DELETE FROM appointments WHERE id = ?`;
   await db.query(query, [id]);
 };
 
-// Get appointment statistics for doctor dashboard
-export const getDoctorStats = async (doctorId) => {
+// Get doctor stats
+export const getDoctorAppointmentStats = async (doctorId) => {
   const query = `
     SELECT 
       COUNT(*) AS total,
-      SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
-      SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved,
-      SUM(CASE WHEN status = 'declined' THEN 1 ELSE 0 END) AS declined
+      SUM(CASE WHEN status = 'pending' THEN 1 END) AS pending,
+      SUM(CASE WHEN status = 'approved' THEN 1 END) AS approved,
+      SUM(CASE WHEN status = 'declined' THEN 1 END) AS declined
     FROM appointments
     WHERE doctor_id = ?
   `;

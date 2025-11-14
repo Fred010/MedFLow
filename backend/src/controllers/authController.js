@@ -1,81 +1,105 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import * as User from '../models/User.js';
+import * as emailService from '../services/emailService.js';
 
-//JWT Token generation
+// Generate JWT token
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user.id, role: user.role },
+    { id: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: '1d' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
   );
 };
 
-//Register new user
+// Register new user
 export const register = async (req, res) => {
   try {
     const { name, email, password, role, specialty } = req.body;
 
-    // Check for required fields
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, password, and role are required.'
+        message: 'Please provide all required fields.'
       });
     }
 
-    // Check if user already exists
+    // Check if email is already registered
     const existingUser = await User.findUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'Email is already in use.'
+        message: 'Email already registered.'
       });
     }
 
-    // Hash password securely
+    // Validate role
+    const validRoles = ['patient', 'doctor'];
+    if (role && !validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified.'
+      });
+    }
+
+    // If doctor, specialty is required
+    if (role === 'doctor' && !specialty) {
+      return res.status(400).json({
+        success: false,
+        message: 'Specialty is required for doctors.'
+      });
+    }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user in DB
-    const newUser = await User.createUser({
+    // Create user
+    const newUserId = await User.createUser({
       name,
       email,
       password: hashedPassword,
-      role,
+      role: role || 'patient',
       specialty: role === 'doctor' ? specialty : null
     });
 
-    // Automatically login the user after registration
+    const newUser = await User.findUserById(newUserId);
+
+    // Send welcome email
+    await emailService.sendWelcomeEmail(newUser);
+
+    // Generate JWT token
     const token = generateToken(newUser);
 
+    // Set cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // true only in HTTPS
-      sameSite: 'lax', // needed for local testing
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully.',
+      message: 'Registration successful.',
       user: {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
         specialty: newUser.specialty || null
-      }
+      },
+      token
     });
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during registration.'
+      message: 'Failed to create your account. Please try again.'
     });
   }
 };
 
-//login user
+// Login user
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -83,34 +107,35 @@ export const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required.'
+        message: 'Please provide email and password.'
       });
     }
 
     const user = await User.findUserByEmail(email);
     if (!user) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
-        message: 'Invalid credentials.'
+        message: 'Invalid email or password.'
       });
     }
 
+    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
-        message: 'Invalid credentials.'
+        message: 'Invalid email or password.'
       });
     }
 
     const token = generateToken(user);
 
-    //Set token cookie
+    // Set cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000
     });
 
     res.json({
@@ -122,18 +147,19 @@ export const login = async (req, res) => {
         email: user.email,
         role: user.role,
         specialty: user.specialty || null
-      }
+      },
+      token
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during login.'
+      message: 'Failed to log you in. Please try again.'
     });
   }
 };
 
-//logout user
+// Logout user
 export const logout = (req, res) => {
   try {
     res.clearCookie('token', {
@@ -144,24 +170,24 @@ export const logout = (req, res) => {
 
     res.json({
       success: true,
-      message: 'Logged out successfully.'
+      message: 'Logout successful.'
     });
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error during logout.'
+      message: 'Failed to log you out. Please try again.'
     });
   }
 };
 
-//Get current authenticated user
+// Get current authenticated user
 export const getCurrentUser = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'Not authenticated.'
+        message: 'You are not logged in.'
       });
     }
 
@@ -181,31 +207,31 @@ export const getCurrentUser = async (req, res) => {
     console.error('Get current user error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error fetching current user.'
+      message: 'Failed to retrieve your account details.'
     });
   }
 };
 
-//Verify JWT token validity
+// Verify JWT token
 export const verifyToken = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'Not authenticated.'
+        message: 'You are not logged in.'
       });
     }
 
     res.json({
       success: true,
-      message: 'Token is valid.',
+      message: 'Your session is active.',
       user: req.user
     });
   } catch (error) {
     console.error('Verify token error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error verifying token.'
+      message: 'Failed to verify your session. Please try again.'
     });
   }
 };

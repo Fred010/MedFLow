@@ -1,6 +1,4 @@
-// src/middleware/roleMiddleware.js
-
-// Check if user has required role
+// Generic role checker for multiple allowed roles
 export const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -21,7 +19,7 @@ export const requireRole = (...allowedRoles) => {
   };
 };
 
-// Check if user is patient
+// Specific role check — Patient
 export const isPatient = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -40,7 +38,7 @@ export const isPatient = (req, res, next) => {
   next();
 };
 
-// Check if user is doctor
+// Specific role check — Doctor
 export const isDoctor = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -59,7 +57,7 @@ export const isDoctor = (req, res, next) => {
   next();
 };
 
-// Check if user is admin
+// Specific role check — Admin
 export const isAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({

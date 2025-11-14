@@ -1,14 +1,7 @@
-<% 
-// Define user as undefined if it was never passed to the template 
-// This prevents a ReferenceError if the server didn't pass it, 
-// allowing the check inside navbar.ejs to work gracefully.
-if (typeof user === 'undefined') {
-    var user = undefined; 
-} 
-%>
-
-<%- include('partials/header', { user: user }) %>
-<%- include('partials/navbar', { user: user }) %>
+<%- include('partials/navbar', { 
+    user: typeof user !== 'undefined' ? user : null, 
+    title: "Error" 
+}) %>
 
 <div class="content-wrapper">
     <div class="container">
@@ -16,7 +9,6 @@ if (typeof user === 'undefined') {
             <div class="col-md-6 text-center">
                 <div class="card shadow-lg border-0">
                     <div class="card-body p-5">
-                        <!-- Ensure you have a reference to bootstrap icons library (bi bi-*) in your header partial -->
                         <i class="bi bi-exclamation-triangle text-danger" style="font-size: 5rem;"></i>
                         
                         <h1 class="display-4 fw-bold mt-4">

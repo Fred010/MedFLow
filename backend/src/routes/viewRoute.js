@@ -1,35 +1,25 @@
 // src/routes/viewRoutes.js
-import { Router } from 'express';
-import { 
-  home, 
-  loginPage, 
-  registerPage, 
-  patientDashboard,
-  doctorsPage,
-  bookAppointmentPage,
-  doctorDashboard,
-  appointmentDetails
-} from '../controllers/viewController.js';
-
+import express from 'express';
+import * as ViewController from '../controllers/viewController.js';
 import { authMiddleware, optionalAuth } from '../middlewares/authMiddleware.js';
 import { isPatient, isDoctor } from '../middlewares/roleMiddleware.js';
 
-const router = Router();
+const router = express.Router();
 
 // Public routes
-router.get('/', optionalAuth, home);
-router.get('/login', optionalAuth, loginPage);
-router.get('/register', optionalAuth, registerPage);
+router.get('/', optionalAuth, ViewController.home);
+router.get('/login', optionalAuth, ViewController.loginPage);
+router.get('/register', optionalAuth, ViewController.registerPage);
 
 // Patient routes
-router.get('/patient/dashboard', authMiddleware, isPatient, patientDashboard);
-router.get('/doctors', authMiddleware, isPatient, doctorsPage);
-router.get('/book-appointment/:doctorId', authMiddleware, isPatient, bookAppointmentPage);
+router.get('/patient/dashboard', authMiddleware, isPatient, ViewController.patientDashboard);
+router.get('/doctors', authMiddleware, isPatient, ViewController.doctorsPage);
+router.get('/book-appointment/:doctorId', authMiddleware, isPatient, ViewController.bookAppointmentPage);
 
 // Doctor routes
-router.get('/doctor/dashboard', authMiddleware, isDoctor, doctorDashboard);
+router.get('/doctor/dashboard', authMiddleware, isDoctor, ViewController.doctorDashboard);
 
-// Common route
-router.get('/appointment/:id', authMiddleware, appointmentDetails);
+// Common routes
+router.get('/appointment/:id', authMiddleware, ViewController.appointmentDetails);
 
 export default router;

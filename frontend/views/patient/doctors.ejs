@@ -12,7 +12,7 @@
 
 <div class="content-wrapper">
     <div class="container">
-        <!-- Search and Filter Section -->
+        <!-- Search & Filter -->
         <div class="row mb-4">
             <div class="col-md-12">
                 <div class="card">
@@ -20,10 +20,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Search by name</label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="searchInput" 
-                                       placeholder="Search doctor name...">
+                                <input type="text" class="form-control" id="searchInput" placeholder="Search doctor name...">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Filter by specialty</label>
@@ -31,7 +28,7 @@
                                     <option value="">All Specialties</option>
                                     <% specialties.forEach(specialty => { %>
                                         <option value="<%= specialty %>"><%= specialty %></option>
-                                    <% }); %>
+                                    <% }) %>
                                 </select>
                             </div>
                         </div>
@@ -70,31 +67,18 @@
                                         <i class="bi bi-person-fill text-primary" style="font-size: 2.5rem;"></i>
                                     </div>
                                 </div>
-                                
                                 <h5 class="card-title text-center fw-bold mb-2">
                                     Dr. <%= doctor.name %>
                                 </h5>
-                                
                                 <div class="text-center mb-3">
-                                    <span class="badge bg-info">
-                                        <%= doctor.specialty %>
-                                    </span>
+                                    <span class="badge bg-info"><%= doctor.specialty %></span>
                                 </div>
-
-                                <div class="mb-3">
-                                    <p class="text-muted small mb-2">
-                                        <i class="bi bi-envelope"></i> 
-                                        <%= doctor.email %>
-                                    </p>
-                                    <p class="text-muted small mb-0">
-                                        <i class="bi bi-calendar-check"></i> 
-                                        Available for appointments
-                                    </p>
+                                <div class="mb-3 text-center small text-muted">
+                                    <p class="mb-2"><i class="bi bi-envelope"></i> <%= doctor.email %></p>
+                                    <p class="mb-0"><i class="bi bi-calendar-check"></i> Available for appointments</p>
                                 </div>
-
                                 <div class="d-grid gap-2">
-                                    <a href="/book-appointment/<%= doctor.id %>" 
-                                       class="btn btn-primary">
+                                    <a href="/book-appointment/<%= doctor.id %>" class="btn btn-primary">
                                         <i class="bi bi-calendar-plus"></i> Book Appointment
                                     </a>
                                     <button class="btn btn-outline-secondary btn-sm" 
@@ -105,11 +89,11 @@
                             </div>
                         </div>
                     </div>
-                <% }); %>
+                <% }) %>
             <% } %>
         </div>
 
-        <!-- No Results Message (Hidden by default) -->
+        <!-- No Results (hidden by default) -->
         <div id="noResults" class="row d-none">
             <div class="col-12 text-center py-5">
                 <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
@@ -146,19 +130,18 @@
     const resultCount = document.getElementById('resultCount');
     const noResults = document.getElementById('noResults');
 
-    // Search and filter functionality
+    // Filter doctors dynamically
     function filterDoctors() {
         const searchTerm = searchInput.value.toLowerCase();
         const selectedSpecialty = specialtyFilter.value;
-        const doctorCards = document.querySelectorAll('.doctor-card');
         let visibleCount = 0;
 
-        doctorCards.forEach(card => {
-            const doctorName = card.dataset.name;
-            const doctorSpecialty = card.dataset.specialty;
-            
-            const matchesSearch = doctorName.includes(searchTerm);
-            const matchesSpecialty = !selectedSpecialty || doctorSpecialty === selectedSpecialty;
+        document.querySelectorAll('.doctor-card').forEach(card => {
+            const name = card.dataset.name;
+            const specialty = card.dataset.specialty;
+
+            const matchesSearch = name.includes(searchTerm);
+            const matchesSpecialty = !selectedSpecialty || specialty === selectedSpecialty;
 
             if (matchesSearch && matchesSpecialty) {
                 card.style.display = '';
@@ -169,7 +152,6 @@
         });
 
         resultCount.textContent = visibleCount;
-        
         if (visibleCount === 0) {
             doctorsGrid.classList.add('d-none');
             noResults.classList.remove('d-none');
@@ -182,25 +164,20 @@
     searchInput.addEventListener('input', filterDoctors);
     specialtyFilter.addEventListener('change', filterDoctors);
 
-    // View doctor details
+    // Doctor details modal
     async function viewDoctorDetails(doctorId) {
         const modal = new bootstrap.Modal(document.getElementById('doctorModal'));
         const content = document.getElementById('doctorDetailsContent');
-        
+
         modal.show();
-        content.innerHTML = `
-            <div class="text-center">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        `;
+        content.innerHTML = `<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
 
         try {
             const response = await fetch(`/api/doctors/${doctorId}`);
             const data = await response.json();
 
             if (response.ok) {
+                const doc = data.doctor;
                 content.innerHTML = `
                     <div class="text-center mb-4">
                         <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center"
@@ -208,44 +185,25 @@
                             <i class="bi bi-person-fill text-primary" style="font-size: 3rem;"></i>
                         </div>
                     </div>
-                    <h4 class="text-center fw-bold mb-3">Dr. ${data.doctor.name}</h4>
+                    <h4 class="text-center fw-bold mb-3">Dr. ${doc.name}</h4>
                     <div class="text-center mb-4">
-                        <span class="badge bg-info fs-6">${data.doctor.specialty}</span>
+                        <span class="badge bg-info fs-6">${doc.specialty}</span>
                     </div>
                     <div class="mb-3">
-                        <p class="mb-2">
-                            <i class="bi bi-envelope text-primary"></i> 
-                            <strong>Email:</strong> ${data.doctor.email}
-                        </p>
-                        <p class="mb-2">
-                            <i class="bi bi-calendar-check text-primary"></i> 
-                            <strong>Status:</strong> Available for appointments
-                        </p>
-                        <p class="mb-0">
-                            <i class="bi bi-clock text-primary"></i> 
-                            <strong>Joined:</strong> ${new Date(data.doctor.created_at).toLocaleDateString()}
-                        </p>
+                        <p class="mb-2"><i class="bi bi-envelope text-primary"></i> <strong>Email:</strong> ${doc.email}</p>
+                        <p class="mb-2"><i class="bi bi-calendar-check text-primary"></i> <strong>Status:</strong> Available for appointments</p>
+                        <p class="mb-0"><i class="bi bi-clock text-primary"></i> <strong>Joined:</strong> ${new Date(doc.created_at).toLocaleDateString()}</p>
                     </div>
                     <div class="d-grid">
-                        <a href="/book-appointment/${doctorId}" class="btn btn-primary">
-                            <i class="bi bi-calendar-plus"></i> Book Appointment
-                        </a>
+                        <a href="/book-appointment/${doctorId}" class="btn btn-primary"><i class="bi bi-calendar-plus"></i> Book Appointment</a>
                     </div>
                 `;
             } else {
-                content.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i> Failed to load doctor details
-                    </div>
-                `;
+                content.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Failed to load doctor details</div>`;
             }
-        } catch (error) {
-            console.error('Error:', error);
-            content.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle"></i> An error occurred
-                </div>
-            `;
+        } catch (err) {
+            console.error(err);
+            content.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> An error occurred</div>`;
         }
     }
 </script>

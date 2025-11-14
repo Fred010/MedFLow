@@ -90,7 +90,7 @@
                         </h5>
                     </div>
                     <div class="card-body p-0">
-                        <% if (appointments.length === 0) { %>
+                        <% if (!appointments || appointments.length === 0) { %>
                             <div class="text-center p-5">
                                 <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
                                 <h5 class="text-muted mt-3">No appointments yet</h5>
@@ -166,18 +166,14 @@
     </div>
 </div>
 
-<script>
+<script type="module">
     async function cancelAppointment(appointmentId) {
-        if (!confirm('Are you sure you want to cancel this appointment?')) {
-            return;
-        }
+        if (!confirm('Are you sure you want to cancel this appointment?')) return;
 
         try {
             const response = await fetch(`/api/appointments/${appointmentId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             });
 
             const data = await response.json();
