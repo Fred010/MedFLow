@@ -20,7 +20,9 @@
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email Address</label>
                                 <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                    <span class="input-group-text">
+                                        <i class="bi bi-envelope"></i>
+                                    </span>
                                     <input type="email" 
                                            class="form-control" 
                                            id="email" 
@@ -33,7 +35,9 @@
                             <div class="mb-3">
                                 <label for="password" class="form-label">Password</label>
                                 <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                    <span class="input-group-text">
+                                        <i class="bi bi-lock"></i>
+                                    </span>
                                     <input type="password" 
                                            class="form-control" 
                                            id="password" 
@@ -66,10 +70,18 @@
 
                         <!-- Demo Accounts -->
                         <div class="mt-4 p-3 bg-light rounded">
-                            <p class="small text-muted mb-2"><strong>Demo Accounts:</strong></p>
-                            <p class="small text-muted mb-1"><strong>Patient:</strong> snrdev44@gmail.com</p>
-                            <p class="small text-muted mb-0"><strong>Doctor:</strong> peter.simon@medflow.com</p>
-                            <p class="small text-muted mb-0">Password: Password123</p>
+                            <p class="small text-muted mb-2">
+                                <strong>Demo Accounts:</strong>
+                            </p>
+                            <p class="small text-muted mb-1">
+                                <strong>Patient:</strong> john.doe@example.com
+                            </p>
+                            <p class="small text-muted mb-0">
+                                <strong>Doctor:</strong> sarah.johnson@medflow.com
+                            </p>
+                            <p class="small text-muted mb-0">
+                                Password: password123
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -86,47 +98,48 @@
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
-        const rememberMe = document.getElementById('rememberMe').checked;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
-        // Disable button and show spinner
+        // Disable button and show loading
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Logging in...';
 
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // include cookies for session
-                body: JSON.stringify({ email, password, rememberMe })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
             });
 
             const data = await response.json();
 
             if (response.ok) {
+                // Show success message
                 showAlert('Login successful! Redirecting...', 'success');
-
+                
+                // Redirect based on role
                 setTimeout(() => {
-                    switch (data.user.role) {
-                        case 'patient':
-                            window.location.href = '/patient/dashboard';
-                            break;
-                        case 'doctor':
-                            window.location.href = '/doctor/dashboard';
-                            break;
-                        default:
-                            window.location.href = '/';
+                    if (data.user.role === 'patient') {
+                        window.location.href = '/patient/dashboard';
+                    } else if (data.user.role === 'doctor') {
+                        window.location.href = '/doctor/dashboard';
+                    } else {
+                        window.location.href = '/';
                     }
                 }, 1000);
             } else {
                 showAlert(data.message || 'Login failed. Please try again.', 'danger');
-                resetLoginButton();
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Login';
             }
-        } catch (err) {
-            console.error('Login error:', err);
-            showAlert('An unexpected error occurred. Please try again.', 'danger');
-            resetLoginButton();
+        } catch (error) {
+            console.error('Login error:', error);
+            showAlert('An error occurred. Please try again.', 'danger');
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Login';
         }
     });
 
@@ -137,11 +150,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         `;
-    }
-
-    function resetLoginButton() {
-        loginBtn.disabled = false;
-        loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Login';
     }
 </script>
 

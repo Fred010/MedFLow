@@ -1,264 +1,36 @@
-import { Router } from 'express';
-import { pool } from '../config/db.js';
-import { isAuthenticated, isPatient } from '../middlewares/roleMiddleware.js';
+import express from 'express';
+import { requireRole } from '../middlewares/roleMiddleware.js'; // <-- fixed path
+import {
+    getDashboard,
+    getProfile,
+    updateProfile,
+    getDoctors,
+    getAppointments,
+    getMedicalHistory
+} from '../controllers/patientController.js';
 
-const router = Router();
+const router = express.Router();
 
-// Patient dashboard
-router.get('/dashboard', isAuthenticated, isPatient, async (req, res) => {
-    try {
-        const patientId = req.user.id;
+// Middleware to allow only patients
+const patientOnly = requireRole('patient');
 
-        const [patientRecords] = await pool.execute(`
-            SELECT p.*, u.full_name, u.email, u.phone
-            FROM patients p
-            JOIN users u ON p.user_id = u.id
-            WHERE u.id = ?
-        `, [patientId]);
+// Dashboard
+router.get('/dashboard', patientOnly, getDashboard);
 
-        if (!patientRecords.length) {
-            return res.render('error', { title: 'Error', error: 'We couldn’t find your profile.' });
-        }
+// Profile
+router.get('/profile', patientOnly, getProfile);
+router.post('/profile', patientOnly, updateProfile);
 
-        const patient = patientRecords[0];
+// Doctors
+router.get('/doctors', patientOnly, (req, res, next) => {
+    console.log('GET /patient/doctors hit by user:', req.user);
+    next();
+}, getDoctors);
 
-        const [stats] = await pool.execute(`
-            SELECT 
-                COUNT(*) as total_appointments,
-                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_appointments,
-                COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_appointments,
-                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_appointments,
-                COUNT(CASE WHEN status = 'declined' THEN 1 END) as declined_appointments,
-                COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_appointments
-            FROM appointments 
-            WHERE patient_id = ?
-        `, [patient.id]);
+// Appointments
+router.get('/appointments', patientOnly, getAppointments);
 
-        const [upcomingAppointments] = await pool.execute(`
-            SELECT a.*, d.specialty, u.full_name as doctor_name, u.email as doctor_email
-            FROM appointments a
-            JOIN doctors d ON a.doctor_id = d.id
-            JOIN users u ON d.user_id = u.id
-            WHERE a.patient_id = ? AND a.appointment_date >= CURDATE() AND a.status IN ('pending', 'approved')
-            ORDER BY a.appointment_date ASC, a.appointment_time ASC
-            LIMIT 5
-        `, [patient.id]);
-
-        const [recentAppointments] = await pool.execute(`
-            SELECT a.*, d.specialty, u.full_name as doctor_name
-            FROM appointments a
-            JOIN doctors d ON a.doctor_id = d.id
-            JOIN users u ON d.user_id = u.id
-            WHERE a.patient_id = ? AND a.appointment_date < CURDATE()
-            ORDER BY a.appointment_date DESC, a.appointment_time DESC
-            LIMIT 5
-        `, [patient.id]);
-
-        res.render('patients/dashboard', {
-            title: 'Patient Dashboard - MedFlow',
-            patient,
-            stats: stats[0],
-            upcomingAppointments,
-            recentAppointments
-        });
-
-    } catch (err) {
-        console.error('Dashboard error:', err);
-        res.render('error', { title: 'Error', error: 'Could not load your dashboard. Please try again.' });
-    }
-});
-
-// Patient profile page
-router.get('/profile', isAuthenticated, isPatient, async (req, res) => {
-    try {
-        const patientId = req.user.id;
-
-        const [patientRecords] = await pool.execute(`
-            SELECT p.*, u.full_name, u.email, u.phone
-            FROM patients p
-            JOIN users u ON p.user_id = u.id
-            WHERE u.id = ?
-        `, [patientId]);
-
-        if (!patientRecords.length) {
-            return res.render('error', { title: 'Error', error: 'Profile not found.' });
-        }
-
-        res.render('patients/profile', {
-            title: 'Patient Profile - MedFlow',
-            patient: patientRecords[0],
-            success: null,
-            error: null
-        });
-
-    } catch (err) {
-        console.error('Profile load error:', err);
-        res.render('error', { title: 'Error', error: 'Could not load your profile.' });
-    }
-});
-
-// Update patient profile
-router.post('/profile', isAuthenticated, isPatient, async (req, res) => {
-    try {
-        const patientId = req.user.id;
-        const { date_of_birth, gender, address, emergency_contact, medical_history } = req.body;
-
-        await pool.execute(`
-            UPDATE patients p
-            JOIN users u ON p.user_id = u.id
-            SET p.date_of_birth = ?, p.gender = ?, p.address = ?, p.emergency_contact = ?, p.medical_history = ?
-            WHERE u.id = ?
-        `, [date_of_birth, gender, address, emergency_contact, medical_history, patientId]);
-
-        const [patientRecords] = await pool.execute(`
-            SELECT p.*, u.full_name, u.email, u.phone
-            FROM patients p
-            JOIN users u ON p.user_id = u.id
-            WHERE u.id = ?
-        `, [patientId]);
-
-        res.render('patients/profile', {
-            title: 'Patient Profile - MedFlow',
-            patient: patientRecords[0],
-            success: 'Profile updated successfully!',
-            error: null
-        });
-
-    } catch (err) {
-        console.error('Profile update error:', err);
-
-        const [patientRecords] = await pool.execute(`
-            SELECT p.*, u.full_name, u.email, u.phone
-            FROM patients p
-            JOIN users u ON p.user_id = u.id
-            WHERE u.id = ?
-        `, [req.user.id]);
-
-        res.render('patients/profile', {
-            title: 'Patient Profile - MedFlow',
-            patient: patientRecords[0],
-            success: null,
-            error: 'Failed to update profile. Please try again.'
-        });
-    }
-});
-
-// Browse doctors
-router.get('/doctors', isAuthenticated, isPatient, async (req, res) => {
-    try {
-        const { specialty } = req.query;
-        let query = `
-            SELECT d.*, u.full_name, u.email, u.phone
-            FROM doctors d
-            JOIN users u ON d.user_id = u.id
-            WHERE u.is_active = true
-        `;
-        let params = [];
-
-        if (specialty) {
-            query += ' AND d.specialty = ?';
-            params.push(specialty);
-        }
-
-        query += ' ORDER BY u.full_name ASC';
-
-        const [doctors] = await pool.execute(query, params);
-
-        const [specialties] = await pool.execute(`
-            SELECT DISTINCT specialty FROM doctors d
-            JOIN users u ON d.user_id = u.id
-            WHERE u.is_active = true
-            ORDER BY specialty ASC
-        `);
-
-        res.render('patients/doctors', {
-            title: 'Find Doctors - MedFlow',
-            doctors,
-            specialties,
-            selectedSpecialty: specialty || ''
-        });
-
-    } catch (err) {
-        console.error('Doctors load error:', err);
-        res.render('error', { title: 'Error', error: 'Could not load doctors list.' });
-    }
-});
-
-// Patient appointments
-router.get('/appointments', isAuthenticated, isPatient, async (req, res) => {
-    try {
-        const { status } = req.query;
-        const patientId = req.user.id;
-
-        const [patientRecords] = await pool.execute('SELECT id FROM patients WHERE user_id = ?', [patientId]);
-        if (!patientRecords.length) return res.render('error', { title: 'Error', error: 'Profile not found.' });
-
-        const patientDbId = patientRecords[0].id;
-        let query = `
-            SELECT a.*, d.specialty, u.full_name as doctor_name, u.email as doctor_email
-            FROM appointments a
-            JOIN doctors d ON a.doctor_id = d.id
-            JOIN users u ON d.user_id = u.id
-            WHERE a.patient_id = ?
-        `;
-        let params = [patientDbId];
-
-        if (status) {
-            query += ' AND a.status = ?';
-            params.push(status);
-        }
-
-        query += ' ORDER BY a.appointment_date DESC, a.appointment_time DESC';
-
-        const [appointments] = await pool.execute(query, params);
-
-        res.render('patients/appointments', {
-            title: 'My Appointments - MedFlow',
-            appointments,
-            currentStatus: status || ''
-        });
-
-    } catch (err) {
-        console.error('Appointments load error:', err);
-        res.render('error', { title: 'Error', error: 'Could not load your appointments.' });
-    }
-});
-
-// Medical history
-router.get('/medical-history', isAuthenticated, isPatient, async (req, res) => {
-    try {
-        const patientId = req.user.id;
-
-        const [patientRecords] = await pool.execute(`
-            SELECT p.*, u.full_name, u.email
-            FROM patients p
-            JOIN users u ON p.user_id = u.id
-            WHERE u.id = ?
-        `, [patientId]);
-
-        if (!patientRecords.length) return res.render('error', { title: 'Error', error: 'Profile not found.' });
-
-        const patient = patientRecords[0];
-
-        const [medicalHistory] = await pool.execute(`
-            SELECT a.*, d.specialty, u.full_name as doctor_name
-            FROM appointments a
-            JOIN doctors d ON a.doctor_id = d.id
-            JOIN users u ON d.user_id = u.id
-            WHERE a.patient_id = ? AND a.status = 'completed' AND (a.notes IS NOT NULL AND a.notes != '')
-            ORDER BY a.appointment_date DESC
-        `, [patient.id]);
-
-        res.render('patients/medical-history', {
-            title: 'Medical History - MedFlow',
-            patient,
-            medicalHistory
-        });
-
-    } catch (err) {
-        console.error('Medical history load error:', err);
-        res.render('error', { title: 'Error', error: 'Could not load medical history.' });
-    }
-});
+// Medical History
+router.get('/medical-history', patientOnly, getMedicalHistory);
 
 export default router;

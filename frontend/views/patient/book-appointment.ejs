@@ -14,6 +14,7 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
+
                 <!-- Doctor Info Card -->
                 <div class="card mb-4">
                     <div class="card-body">
@@ -48,6 +49,7 @@
                         <div id="alertContainer"></div>
 
                         <form id="bookingForm">
+                            <!-- Appointment Date -->
                             <div class="mb-4">
                                 <label for="appointmentDate" class="form-label">
                                     <strong>Appointment Date & Time</strong>
@@ -62,6 +64,7 @@
                                 </div>
                             </div>
 
+                            <!-- Reason for Visit -->
                             <div class="mb-4">
                                 <label for="reason" class="form-label">
                                     <strong>Reason for Visit</strong>
@@ -79,6 +82,7 @@
                                 </div>
                             </div>
 
+                            <!-- Important Info -->
                             <div class="alert alert-info">
                                 <h6 class="alert-heading">
                                     <i class="bi bi-info-circle"></i> Important Information
@@ -91,6 +95,7 @@
                                 </ul>
                             </div>
 
+                            <!-- Buttons -->
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                                     <i class="bi bi-send"></i> Submit Request
@@ -102,6 +107,7 @@
                         </form>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -115,38 +121,37 @@
     const charCount = document.getElementById('charCount');
     const appointmentDateInput = document.getElementById('appointmentDate');
 
-    // Set minimum date to current date and time
+    // Set minimum date to current date & time
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    appointmentDateInput.min = now.toISOString().slice(0, 16);
+    appointmentDateInput.min = now.toISOString().slice(0,16);
 
     // Character counter
-    reasonTextarea.addEventListener('input', function() {
-        charCount.textContent = this.value.length;
+    reasonTextarea.addEventListener('input', () => {
+        charCount.textContent = reasonTextarea.value.length;
     });
 
+    // Form submission
     bookingForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const appointmentDate = document.getElementById('appointmentDate').value;
-        const reason = document.getElementById('reason').value;
+        const appointmentDate = appointmentDateInput.value;
+        const reason = reasonTextarea.value.trim();
 
-        // Validate date is in the future
+        // Validate future date
         if (new Date(appointmentDate) <= new Date()) {
             showAlert('Please select a future date and time', 'danger');
             return;
         }
 
-        // Disable button and show loading
+        // Disable button and show spinner
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
 
         try {
             const response = await fetch('/api/appointments', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     doctor_id: <%= doctor.id %>,
                     appointment_date: appointmentDate,
@@ -158,17 +163,14 @@
 
             if (response.ok) {
                 showAlert('Appointment request submitted successfully! Redirecting...', 'success');
-                
-                setTimeout(() => {
-                    window.location.href = '/patient/dashboard';
-                }, 2000);
+                setTimeout(() => window.location.href = '/patient/dashboard', 2000);
             } else {
                 showAlert(data.message || 'Failed to book appointment. Please try again.', 'danger');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="bi bi-send"></i> Submit Request';
             }
-        } catch (error) {
-            console.error('Booking error:', error);
+        } catch (err) {
+            console.error('Booking error:', err);
             showAlert('An error occurred. Please try again.', 'danger');
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="bi bi-send"></i> Submit Request';
@@ -182,8 +184,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         `;
-        
-        // Scroll to alert
         alertContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 </script>

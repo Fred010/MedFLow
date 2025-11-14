@@ -4,11 +4,11 @@
     --primary-color: #0d6efd;
     --secondary-color: #6c757d;
     --success-color: #198754;
-    --info-color: #0dcaf0;
+    --info-color: #0f5e6e;
     --warning-color: #ffc107;
     --danger-color: #dc3545;
     --light-color: #f8f9fa;
-    --dark-color: #212529;
+    --dark-color: #173858;
 }
 
 /* Global Styles */
@@ -167,7 +167,7 @@ body {
 }
 
 .quick-action-card:hover {
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(10, 88, 202, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(15, 84, 189, 0.1) 0%, rgba(10, 88, 202, 0.1) 100%);
     transform: translateY(-5px);
 }
 
@@ -204,7 +204,30 @@ body {
 
 /* Footer */
 footer {
-    background: linear-gradient(135deg, var(--dark-color) 0%, #1a1a1a 100%) !important;
+    background: linear-gradient(135deg, var(--dark-color) 0%, #0f0202 100%) !important;
+    color: rgb(10, 4, 4); /* Footer text color */
+}
+
+footer a {
+    color: white !important;
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: var(--primary-color) !important;
+}
+/* Contact Info in Footer */
+footer .contact-info {
+    color: white; /* Ensure support email and phone number are white */
+    font-weight: 500;
+}
+
+footer .contact-info a {
+    color: white !important;
+}
+
+footer .contact-info a:hover {
+    color: var(--primary-color) !important;
 }
 
 /* Loading Spinner */
@@ -212,7 +235,7 @@ footer {
     display: inline-block;
     width: 20px;
     height: 20px;
-    border: 3px solid rgba(255,255,255,.3);
+    border: 3px solid rgba(218, 17, 17, 0.3);
     border-radius: 50%;
     border-top-color: #fff;
     animation: spin 1s ease-in-out infinite;
@@ -289,7 +312,7 @@ footer {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #0a58ca;
+    background: #0e3877;
 }
 
 /* Animation Classes */

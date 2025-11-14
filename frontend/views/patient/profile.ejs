@@ -1,0 +1,116 @@
+<%- include('../partials/header', { title }) %>
+
+<div class="container mt-5">
+    <h2>Patient Profile</h2>
+
+    <!-- Success alert -->
+    <% if (success) { %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <%= success %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% } %>
+
+    <!-- Error alert -->
+    <% if (error) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <%= error %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% } %>
+
+    <form action="/patient/profile" method="POST" novalidate>
+        <!-- CSRF token (if using csrf middleware in Express) -->
+        <% if (csrfToken) { %>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <% } %>
+
+        <!-- Name (readonly) -->
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input 
+                type="text" 
+                class="form-control-plaintext" 
+                id="name" 
+                value="<%= patient.name %>" 
+                readonly
+            >
+        </div>
+
+        <!-- Email (readonly) -->
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input 
+                type="email" 
+                class="form-control-plaintext" 
+                id="email" 
+                value="<%= patient.email %>" 
+                readonly
+            >
+        </div>
+
+        <!-- Phone (readonly) -->
+        <div class="mb-3">
+            <label for="phone" class="form-label">Phone</label>
+            <input 
+                type="text" 
+                class="form-control-plaintext" 
+                id="phone" 
+                value="<%= patient.phone %>" 
+                readonly
+            >
+        </div>
+
+        <!-- Address -->
+        <div class="mb-3">
+            <label for="address" class="form-label">Address</label>
+            <input 
+                type="text" 
+                name="address" 
+                id="address" 
+                class="form-control" 
+                value="<%= patient.address || '' %>" 
+                maxlength="255"
+                placeholder="Enter your address"
+                aria-describedby="addressHelp"
+            >
+            <div id="addressHelp" class="form-text">Maximum 255 characters.</div>
+        </div>
+
+        <!-- Emergency Contact -->
+        <div class="mb-3">
+            <label for="emergency_contact" class="form-label">Emergency Contact</label>
+            <input 
+                type="text" 
+                name="emergency_contact" 
+                id="emergency_contact" 
+                class="form-control" 
+                value="<%= patient.emergency_contact || '' %>" 
+                maxlength="20"
+                pattern="[\d\s+-]+"
+                placeholder="Enter phone number"
+                aria-describedby="emergencyHelp"
+            >
+            <div id="emergencyHelp" class="form-text">Numbers, spaces, +, - allowed. Max 20 characters.</div>
+        </div>
+
+        <!-- Medical History -->
+        <div class="mb-3">
+            <label for="medical_history" class="form-label">Medical History</label>
+            <textarea 
+                name="medical_history" 
+                id="medical_history" 
+                class="form-control" 
+                rows="5" 
+                maxlength="1000"
+                placeholder="Briefly describe your medical history"
+                aria-describedby="medicalHelp"
+            ><%= patient.medical_history || '' %></textarea>
+            <div id="medicalHelp" class="form-text">Maximum 1000 characters.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Profile</button>
+    </form>
+</div>
+
+<%- include('../partials/footer') %>

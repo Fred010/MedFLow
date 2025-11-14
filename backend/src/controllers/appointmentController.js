@@ -1,18 +1,10 @@
-import { findUserById } from '../models/User.js';
-import {
-  createAppointment,
-  findAppointmentById,
-  checkAppointmentConflict,
-  getPatientAppointments,
-  getDoctorAppointments,
-  getPendingAppointments,
-  updateAppointmentStatus,
-  deleteAppointment,
-  getDoctorStats
-} from '../models/Appointments.js';
+// src/controllers/appointmentController.js
+import * as Appointment from '../models/Appointments.js';
+import * as User from '../models/User.js';
 import * as emailService from '../services/emailService.js';
 
-export const createAppointmentController = async (req, res) => {
+// Create new appointment (Patient only)
+export const createAppointment = async (req, res) => {
   try {
     const { doctor_id, appointment_date, reason } = req.body;
     const patient_id = req.user.id;
@@ -20,63 +12,64 @@ export const createAppointmentController = async (req, res) => {
     if (!doctor_id || !appointment_date || !reason) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required appointment details.'
+        message: 'Please provide all required fields.'
       });
     }
 
-    const doctor = await findUserById(doctor_id);
+    const doctor = await User.findUserById(doctor_id);
     if (!doctor || doctor.role !== 'doctor') {
       return res.status(404).json({
         success: false,
-        message: 'The selected doctor could not be found.'
+        message: 'Doctor not found.'
       });
     }
 
-    const hasConflict = await checkAppointmentConflict(doctor_id, appointment_date);
+    const hasConflict = await Appointment.checkConflict(doctor_id, appointment_date);
     if (hasConflict) {
       return res.status(400).json({
         success: false,
-        message: 'That time slot is already booked. Please choose another one.'
+        message: 'This time slot is already booked. Please choose another time.'
       });
     }
 
     if (new Date(appointment_date) <= new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'Appointment time must be in the future.'
+        message: 'Appointment date must be in the future.'
       });
     }
 
-    const appointmentId = await createAppointment({
+    const appointmentId = await Appointment.create({
       patient_id,
       doctor_id,
       appointment_date,
       reason
     });
 
-    const appointment = await findAppointmentById(appointmentId);
+    const appointment = await Appointment.findById(appointmentId);
 
-    // Send emails using the updated emailService functions
     await emailService.sendAppointmentConfirmation(appointment);
     await emailService.sendDoctorNotification(appointment);
 
     res.status(201).json({
       success: true,
-      message: 'Your appointment was booked successfully.',
+      message: 'Appointment booked successfully',
       appointment
     });
   } catch (error) {
     console.error('Create appointment error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to book your appointment. Please try again.'
+      message: 'Failed to book appointment. Please try again.'
     });
   }
 };
 
-export const getPatientAppointmentsController = async (req, res) => {
+// Get patient's appointments
+export const getPatientAppointments = async (req, res) => {
   try {
-    const appointments = await getPatientAppointments(req.user.id);
+    const appointments = await Appointment.getPatientAppointments(req.user.id);
+
     res.json({
       success: true,
       count: appointments.length,
@@ -86,14 +79,16 @@ export const getPatientAppointmentsController = async (req, res) => {
     console.error('Get patient appointments error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve your appointments.'
+      message: 'Failed to retrieve appointments.'
     });
   }
 };
 
-export const getDoctorAppointmentsController = async (req, res) => {
+// Get doctor's appointments
+export const getDoctorAppointments = async (req, res) => {
   try {
-    const appointments = await getDoctorAppointments(req.user.id);
+    const appointments = await Appointment.getDoctorAppointments(req.user.id);
+
     res.json({
       success: true,
       count: appointments.length,
@@ -103,14 +98,16 @@ export const getDoctorAppointmentsController = async (req, res) => {
     console.error('Get doctor appointments error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve your dashboard statistics.'
+      message: 'Failed to retrieve appointments.'
     });
   }
 };
 
-export const getPendingAppointmentsController = async (req, res) => {
+// Get pending appointments for doctor
+export const getPendingAppointments = async (req, res) => {
   try {
-    const appointments = await getPendingAppointments(req.user.id);
+    const appointments = await Appointment.getPendingAppointments(req.user.id);
+
     res.json({
       success: true,
       count: appointments.length,
@@ -120,30 +117,35 @@ export const getPendingAppointmentsController = async (req, res) => {
     console.error('Get pending appointments error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve your dashboard statistics.'
+      message: 'Failed to retrieve pending appointments.'
     });
   }
 };
 
-export const getAppointmentController = async (req, res) => {
+// Get single appointment
+export const getAppointment = async (req, res) => {
   try {
     const { id } = req.params;
-    const appointment = await findAppointmentById(id);
+    const appointment = await Appointment.findAppointmentById(id);
 
     if (!appointment) {
       return res.status(404).json({
         success: false,
-        message: 'The requested appointment could not be found.'
+        message: 'Appointment not found.'
       });
     }
 
-    if (
-      (req.user.role === 'patient' && appointment.patient_id !== req.user.id) ||
-      (req.user.role === 'doctor' && appointment.doctor_id !== req.user.id)
-    ) {
+    if (req.user.role === 'patient' && appointment.patient_id !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'You are not authorized to access this appointment.'
+        message: 'Access denied.'
+      });
+    }
+
+    if (req.user.role === 'doctor' && appointment.doctor_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied.'
       });
     }
 
@@ -155,15 +157,16 @@ export const getAppointmentController = async (req, res) => {
     console.error('Get appointment error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve the appointment.'
+      message: 'Failed to retrieve appointment.'
     });
   }
 };
 
-export const approveAppointmentController = async (req, res) => {
+// Approve appointment (Doctor only)
+export const approveAppointment = async (req, res) => {
   try {
     const { id } = req.params;
-    const appointment = await findAppointmentById(id);
+    const appointment = await Appointment.findAppointmentById(id);
 
     if (!appointment) {
       return res.status(404).json({
@@ -175,39 +178,41 @@ export const approveAppointmentController = async (req, res) => {
     if (appointment.doctor_id !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'You are not authorized to approve this appointment.'
+        message: 'Access denied.'
       });
     }
 
     if (appointment.status !== 'pending') {
       return res.status(400).json({
         success: false,
-        message: `This appointment is already ${appointment.status}.`
+        message: `Appointment already ${appointment.status}.`
       });
     }
 
-    await updateAppointmentStatus(id, 'approved');
-    const updatedAppointment = await findAppointmentById(id);
+    await Appointment.updateStatus(id, 'approved');
+
+    const updatedAppointment = await Appointment.findAppointmentById(id);
     await emailService.sendApprovalEmail(updatedAppointment);
 
     res.json({
       success: true,
-      message: 'Appointment approved successfully.',
+      message: 'Appointment approved successfully',
       appointment: updatedAppointment
     });
   } catch (error) {
     console.error('Approve appointment error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to approve the appointment.'
+      message: 'Failed to approve appointment.'
     });
   }
 };
 
-export const declineAppointmentController = async (req, res) => {
+// Decline appointment (Doctor only)
+export const declineAppointment = async (req, res) => {
   try {
     const { id } = req.params;
-    const appointment = await findAppointmentById(id);
+    const appointment = await Appointment.findAppointmentById(id);
 
     if (!appointment) {
       return res.status(404).json({
@@ -219,39 +224,41 @@ export const declineAppointmentController = async (req, res) => {
     if (appointment.doctor_id !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'You are not authorized to decline this appointment.'
+        message: 'Access denied.'
       });
     }
 
     if (appointment.status !== 'pending') {
       return res.status(400).json({
         success: false,
-        message: `This appointment is already ${appointment.status}.`
+        message: `Appointment already ${appointment.status}.`
       });
     }
 
-    await updateAppointmentStatus(id, 'declined');
-    const updatedAppointment = await findAppointmentById(id);
+    await Appointment.updateStatus(id, 'declined');
+
+    const updatedAppointment = await Appointment.findAppointmentById(id);
     await emailService.sendDeclineEmail(updatedAppointment);
 
     res.json({
       success: true,
-      message: 'Appointment declined successfully.',
+      message: 'Appointment declined',
       appointment: updatedAppointment
     });
   } catch (error) {
     console.error('Decline appointment error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to decline the appointment.'
+      message: 'Failed to decline appointment.'
     });
   }
 };
 
-export const cancelAppointmentController = async (req, res) => {
+// Cancel appointment (Patient only)
+export const cancelAppointment = async (req, res) => {
   try {
     const { id } = req.params;
-    const appointment = await findAppointmentById(id);
+    const appointment = await Appointment.findAppointmentById(id);
 
     if (!appointment) {
       return res.status(404).json({
@@ -263,28 +270,30 @@ export const cancelAppointmentController = async (req, res) => {
     if (appointment.patient_id !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'You are not authorized to cancel this appointment.'
+        message: 'Access denied.'
       });
     }
 
-    await deleteAppointment(id);
+    await Appointment.delete(id);
 
     res.json({
       success: true,
-      message: 'Your appointment was cancelled successfully.'
+      message: 'Appointment cancelled successfully'
     });
   } catch (error) {
     console.error('Cancel appointment error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to cancel the appointment.'
+      message: 'Failed to cancel appointment.'
     });
   }
 };
 
-export const getDoctorStatsController = async (req, res) => {
+// Get doctor statistics (for dashboard)
+export const getDoctorStats = async (req, res) => {
   try {
-    const stats = await getDoctorStats(req.user.id);
+    const stats = await Appointment.getDoctorStats(req.user.id);
+
     res.json({
       success: true,
       stats
@@ -293,7 +302,7 @@ export const getDoctorStatsController = async (req, res) => {
     console.error('Get doctor stats error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve dashboard statistics.'
+      message: 'Failed to retrieve statistics.'
     });
   }
 };

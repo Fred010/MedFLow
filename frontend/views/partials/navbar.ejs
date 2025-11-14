@@ -1,0 +1,205 @@
+<%
+    // FIX: Safely receive user without overriding it
+    const currentUser = (typeof user !== 'undefined' && user) ? user : null;
+%>
+
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="bi bi-heart-pulse-fill"></i>
+            MedFlow
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+
+                <% if (currentUser) { %>
+
+                    <!-- Logged-in user navigation -->
+                    <% if (currentUser.role === 'patient') { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/patient/dashboard">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/doctors">
+                                <i class="bi bi-person-badge"></i> Find Doctors
+                            </a>
+                        </li>
+                    <% } else if (currentUser.role === 'doctor') { %>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/doctor/dashboard">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+
+                    <% } %>
+
+                    <!-- User Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> <%= currentUser.name %>
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+
+                            <!-- Profile button opens modal -->
+                            <li>
+                                <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#profileModal">
+                                    <i class="bi bi-person"></i> Profile
+                                </button>
+                            </li>
+
+                            <li><hr class="dropdown-divider"></li>
+
+                            <li>
+                                <a class="dropdown-item text-danger" href="#" onclick="logout(event)">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </a>
+                            </li>
+
+                        </ul>
+                    </li>
+
+                <% } else { %>
+
+                    <!-- Guest navigation -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">
+                            <i class="bi bi-box-arrow-in-right"></i> Login
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-light text-primary ms-2 px-3" href="/register">
+                            <i class="bi bi-person-plus"></i> Register
+                        </a>
+                    </li>
+
+                <% } %>
+
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- PROFILE MODAL (only render when logged in) -->
+<% if (currentUser) { %>
+
+<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="profileModalLabel">My Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="profileForm"
+                  action="<%= currentUser.role === 'patient' ? '/patient/profile' : '/doctor/profile' %>"
+                  method="POST"
+                  novalidate>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" value="<%= currentUser.name %>" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" value="<%= currentUser.email %>" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" value="<%= currentUser.phone || '' %>" readonly>
+                    </div>
+
+                    <% if (currentUser.role === 'patient') { %>
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <input type="text" name="address" class="form-control"
+                                value="<%= currentUser.address || '' %>">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Emergency Contact</label>
+                            <input type="text" name="emergency_contact" class="form-control"
+                                value="<%= currentUser.emergency_contact || '' %>">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Medical History</label>
+                            <textarea name="medical_history" class="form-control" rows="3"><%= currentUser.medical_history || '' %></textarea>
+                        </div>
+                    <% } %>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<% } %>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("profileForm");
+    if (!form) return;
+
+    form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+
+<script>
+async function logout(e) {
+    e.preventDefault();
+
+    if (confirm("Are you sure you want to logout?")) {
+        try {
+            const response = await fetch("/api/auth/logout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (response.ok) {
+                window.location.href = "/login";
+            } else {
+                alert("Logout failed.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Logout error.");
+        }
+    }
+}
+</script>

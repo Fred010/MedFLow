@@ -1,13 +1,14 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import * as User from '../models/User.js';
+import * as emailService from '../services/emailService.js';
 
 // Generate JWT token
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user.id, role: user.role },
+    { id: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: '1d' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
   );
 };
 
@@ -16,50 +17,78 @@ export const register = async (req, res) => {
   try {
     const { name, email, password, role, specialty } = req.body;
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please fill in all required fields.'
+        message: 'Please provide all required fields.'
       });
     }
 
+    // Check if email is already registered
     const existingUser = await User.findUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'That email address is already registered.'
+        message: 'Email already registered.'
       });
     }
 
+    // Validate role
+    const validRoles = ['patient', 'doctor'];
+    if (role && !validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified.'
+      });
+    }
+
+    // If doctor, specialty is required
+    if (role === 'doctor' && !specialty) {
+      return res.status(400).json({
+        success: false,
+        message: 'Specialty is required for doctors.'
+      });
+    }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await User.createUser({
+    // Create user
+    const newUserId = await User.createUser({
       name,
       email,
       password: hashedPassword,
-      role,
+      role: role || 'patient',
       specialty: role === 'doctor' ? specialty : null
     });
 
+    const newUser = await User.findUserById(newUserId);
+
+    // Send welcome email
+    await emailService.sendWelcomeEmail(newUser);
+
+    // Generate JWT token
     const token = generateToken(newUser);
 
+    // Set cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
     res.status(201).json({
       success: true,
-      message: 'Account created successfully.',
+      message: 'Registration successful.',
       user: {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
         specialty: newUser.specialty || null
-      }
+      },
+      token
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -78,21 +107,22 @@ export const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please enter both email and password.'
+        message: 'Please provide email and password.'
       });
     }
 
     const user = await User.findUserByEmail(email);
     if (!user) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
         message: 'Invalid email or password.'
       });
     }
 
+    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
         message: 'Invalid email or password.'
       });
@@ -100,6 +130,7 @@ export const login = async (req, res) => {
 
     const token = generateToken(user);
 
+    // Set cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -116,7 +147,8 @@ export const login = async (req, res) => {
         email: user.email,
         role: user.role,
         specialty: user.specialty || null
-      }
+      },
+      token
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -138,7 +170,7 @@ export const logout = (req, res) => {
 
     res.json({
       success: true,
-      message: 'You have been logged out successfully.'
+      message: 'Logout successful.'
     });
   } catch (error) {
     console.error('Logout error:', error);
@@ -180,7 +212,7 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
-// Verify JWT token validity
+// Verify JWT token
 export const verifyToken = async (req, res) => {
   try {
     if (!req.user) {

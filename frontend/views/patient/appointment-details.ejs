@@ -14,6 +14,7 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
+
                 <!-- Status Alert -->
                 <% if (appointment.status === 'pending') { %>
                     <div class="alert alert-warning">
@@ -46,6 +47,8 @@
                         </h5>
                     </div>
                     <div class="card-body p-4">
+
+                        <!-- Appointment ID & Status -->
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <h6 class="text-muted mb-2">Appointment ID</h6>
@@ -73,6 +76,7 @@
 
                         <hr>
 
+                        <!-- Appointment Date & Creation -->
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <h6 class="text-muted mb-2">
@@ -80,16 +84,12 @@
                                 </h6>
                                 <p class="fw-bold">
                                     <%= new Date(appointment.appointment_date).toLocaleDateString('en-US', { 
-                                        weekday: 'long', 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric' 
+                                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
                                     }) %>
                                 </p>
                                 <p class="text-muted">
                                     <%= new Date(appointment.appointment_date).toLocaleTimeString('en-US', { 
-                                        hour: '2-digit', 
-                                        minute: '2-digit' 
+                                        hour: '2-digit', minute: '2-digit' 
                                     }) %>
                                 </p>
                             </div>
@@ -105,12 +105,14 @@
 
                         <hr>
 
+                        <!-- Reason for Visit -->
                         <div class="mb-3">
                             <h6 class="text-muted mb-2">
                                 <i class="bi bi-file-text"></i> Reason for Visit
                             </h6>
                             <p class="mb-0"><%= appointment.reason %></p>
                         </div>
+
                     </div>
                 </div>
 
@@ -168,6 +170,7 @@
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -175,16 +178,12 @@
 
 <script>
     async function cancelAppointment() {
-        if (!confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
-            return;
-        }
+        if (!confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) return;
 
         try {
             const response = await fetch('/api/appointments/<%= appointment.id %>', {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             });
 
             const data = await response.json();
