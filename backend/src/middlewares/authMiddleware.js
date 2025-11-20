@@ -4,8 +4,11 @@ import { findUserById } from '../models/User.js';
 
 export const authMiddleware = async (req, res, next) => {
   try {
-    // Get token from cookie or Authorization header
-    const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+    // Extract token from cookie or Authorization: Bearer <token>
+    const authHeader = req.headers.authorization;
+    const token =
+      req.cookies?.token ||
+      (authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null);
 
     if (!token) {
       return res.status(401).json({
@@ -14,10 +17,10 @@ export const authMiddleware = async (req, res, next) => {
       });
     }
 
-    // Verify JWT
+    // Validate token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Fetch user
+    // Load user from database
     const user = await findUserById(decoded.id);
 
     if (!user) {
@@ -27,7 +30,7 @@ export const authMiddleware = async (req, res, next) => {
       });
     }
 
-    // Attach user to request
+    // Attach sanitized user object
     req.user = {
       id: user.id,
       name: user.name,
@@ -39,6 +42,8 @@ export const authMiddleware = async (req, res, next) => {
     next();
 
   } catch (error) {
+    console.error('Auth middleware error:', error);
+
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
@@ -53,8 +58,6 @@ export const authMiddleware = async (req, res, next) => {
       });
     }
 
-    console.error('Auth middleware error:', error);
-
     return res.status(500).json({
       success: false,
       message: 'Authentication error.'
@@ -62,10 +65,13 @@ export const authMiddleware = async (req, res, next) => {
   }
 };
 
-// Optional authentication
+// Optional auth (safe for pages that do not require login)
 export const optionalAuth = async (req, res, next) => {
   try {
-    const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    const token =
+      req.cookies?.token ||
+      (authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null);
 
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -82,7 +88,7 @@ export const optionalAuth = async (req, res, next) => {
       }
     }
   } catch (err) {
-    req.user = null; // silently fail — optional
+    req.user = null; // silently fail but do NOT throw error
   }
 
   next();

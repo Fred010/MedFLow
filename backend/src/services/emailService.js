@@ -1,5 +1,14 @@
-// src/services/emailService.js
 import { createTransport } from 'nodemailer';
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load the .env located at: C:/Users/user/Desktop/MedFLow/.env
+// Load environment variables
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 export const EMAIL_SUBJECTS = {
   WELCOME: 'Welcome to MedFlow',
@@ -10,18 +19,20 @@ export const EMAIL_SUBJECTS = {
   REMINDER: 'Appointment Reminder - Tomorrow'
 };
 
-// Create transporter once
+// FIXED TRANSPORTER
 const transporter = createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT || 587,
-  secure: process.env.EMAIL_PORT == 465,
+  host: process.env.EMAIL_HOST || "127.0.0.1",
+  port: Number(process.env.EMAIL_PORT) || 587,
+  secure: false, // Required for STARTTLS on port 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
-// Generic send email function
 export async function sendEmail(to, subject, html) {
   try {
     const info = await transporter.sendMail({
@@ -38,7 +49,6 @@ export async function sendEmail(to, subject, html) {
   }
 }
 
-// Generic HTML template
 function generateTemplate({ title, greeting, body, details = {}, actionText, actionUrl, footer = 'Cheers,<br/>The MedFlow Team' }) {
   const detailsHtml = Object.entries(details).map(
     ([key, value]) => `<strong>${key}:</strong> ${value}<br/>`

@@ -18,84 +18,67 @@ export const register = async (req, res) => {
     const { name, email, password, role, specialty } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide all required fields.'
-      });
+      return res.status(400).json({ success: false, message: "Please provide all required fields." });
     }
 
-    // Check if email is already registered
     const existingUser = await User.findUserByEmail(email);
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email already registered.'
-      });
+      return res.status(400).json({ success: false, message: "Email already registered." });
     }
 
-    // Validate role
-    const validRoles = ['patient', 'doctor'];
+    const validRoles = ["patient", "doctor"];
     if (role && !validRoles.includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid role specified.'
-      });
+      return res.status(400).json({ success: false, message: "Invalid role." });
     }
 
-    // If doctor, specialty is required
-    if (role === 'doctor' && !specialty) {
-      return res.status(400).json({
-        success: false,
-        message: 'Specialty is required for doctors.'
-      });
+    if (role === "doctor" && !specialty) {
+      return res.status(400).json({ success: false, message: "Specialty required for doctors." });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const newUserId = await User.createUser({
       name,
       email,
       password: hashedPassword,
-      role: role || 'patient',
-      specialty: role === 'doctor' ? specialty : null
+      role: role || "patient",
+      specialty: role === "doctor" ? specialty : null
     });
 
     const newUser = await User.findUserById(newUserId);
 
     // Send welcome email
-    await emailService.sendWelcomeEmail(newUser);
+    await emailService.sendEmail(
+      newUser.email,
+      emailService.EMAIL_SUBJECTS.WELCOME,
+      `<h2>Welcome, ${newUser.name}!</h2><p>Your MedFlow account is ready.</p>`
+    );
 
-    // Generate JWT token
     const token = generateToken(newUser);
 
-    // Set cookie
-    res.cookie('token', token, {
+    res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000
     });
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful.',
+      message: "Registration successful.",
       user: {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
-        specialty: newUser.specialty || null
+        specialty: newUser.specialty
       },
       token
     });
+
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create your account. Please try again.'
-    });
+    console.error("Register error:", error);
+    res.status(500).json({ success: false, message: "Failed to create your account. Please try again." });
   }
 };
 

@@ -20,7 +20,7 @@
                         <i class="bi bi-box-arrow-in-right"></i> Login
                     </a>
                 <% } else { %>
-                    <a href="<%= user.role === 'patient' ? '/doctors' : '/doctor/dashboard' %>" 
+                    <a href="<%= user.role === 'patient' ? '/patient/dashboard' : '/doctor/dashboard' %>" 
                        class="btn btn-light btn-lg">
                         <i class="bi bi-arrow-right-circle"></i> Go to Dashboard
                     </a>
