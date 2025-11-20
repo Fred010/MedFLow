@@ -2,13 +2,12 @@ import db from '../config/db.js';
 import bcrypt from 'bcryptjs';
 
 export const createUser = async ({ name, email, password, role, specialty }) => {
-  const hashedPassword = await bcrypt.hash(password, 10);
   const query = `
     INSERT INTO users (name, email, password, role, specialty)
     VALUES (?, ?, ?, ?, ?)
   `;
-  const [result] = await db.query(query, [name, email, hashedPassword, role || 'patient', specialty || null]);
-  return { id: result.insertId, name, email, role, specialty };
+  const [result] = await db.query(query, [name, email, password, role || 'patient', specialty || null]);
+  return result.insertId;
 };
 
 export const findUserByEmail = async (email) => {

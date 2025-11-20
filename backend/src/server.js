@@ -1,3 +1,4 @@
+//server.js
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -64,6 +65,9 @@ app.use((err, req, res, next) => {
     error: process.env.NODE_ENV === 'development' ? err : {}
   });
 });
+
+console.log("Loaded EMAIL_HOST:", process.env.EMAIL_HOST);
+console.log("Loaded EMAIL_PORT:", process.env.EMAIL_PORT);
 
 // Start server
 app.listen(PORT, () => {

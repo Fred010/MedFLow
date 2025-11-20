@@ -113,7 +113,7 @@ export const doctorsPage = async (req, res) => {
 export const bookAppointmentPage = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    const doctor = await User.findById(doctorId);
+    const doctor = await User.findUserById(doctorId);
 
     if (!doctor || doctor.role !== 'doctor') {
       return res.status(404).render('error', { 
